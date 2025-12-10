@@ -1,12 +1,12 @@
-# Byte-compiled / optimized / DLL files
+# Python 字节码 / 优化文件 / DLL 文件
 __pycache__/
 *.py[codz]
 *$py.class
 
-# C extensions
+# C 扩展生成的二进制文件
 *.so
 
-# Distribution / packaging
+# 打包 / 分发相关文件与目录
 .Python
 build/
 develop-eggs/
@@ -26,17 +26,16 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+# PyInstaller 打包配置
+#  通常由 Python 脚本根据模板生成，用于在打包前写入日期等元信息
 *.manifest
 *.spec
 
-# Installer logs
+# 安装器日志
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# 单元测试 / 覆盖率报告
 htmlcov/
 .tox/
 .nox/
@@ -51,90 +50,84 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Translations
+# 文本翻译生成文件
 *.mo
 *.pot
 
-# Django stuff:
+# Django 项目常见文件
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# Flask 项目相关
 instance/
 .webassets-cache
 
-# Scrapy stuff:
+# Scrapy 抓取框架相关
 .scrapy
 
-# Sphinx documentation
+# Sphinx 文档构建输出
 docs/_build/
 
-# PyBuilder
+# PyBuilder 构建工具
 .pybuilder/
 target/
 
-# Jupyter Notebook
+# Jupyter Notebook 检查点
 .ipynb_checkpoints
 
-# IPython
+# IPython 配置
 profile_default/
 ipython_config.py
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
+# pyenv 版本管理
+#   对于库或通用包，通常忽略这些文件；对单一项目也可以选择提交
 # .python-version
 
 # pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
+#   官方推荐将 Pipfile.lock 提交到版本控制
+#   但在多平台协作、依赖存在平台差异时可能会安装不兼容依赖
 #Pipfile.lock
 
 # UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
+#   类似 Pipfile.lock，一般建议将 uv.lock 提交到版本控制
+#   对需要可重复构建的二进制项目尤为推荐，库项目有时会选择忽略
 #uv.lock
 
 # poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
+#   类似 Pipfile.lock，一般建议将 poetry.lock 提交到版本控制
+#   对需要可重复构建的二进制项目尤为推荐，库项目有时会选择忽略
+#   参考：https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
 #poetry.lock
 #poetry.toml
 
 # pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
+#   类似 Pipfile.lock，一般建议将 pdm.lock 提交到版本控制
+#   pdm 建议将工程级配置写入 pdm.toml，但排除 .pdm-python
+#   参考：https://pdm-project.org/en/latest/usage/project/#working-with-version-control
 #pdm.lock
 #pdm.toml
 .pdm-python
 .pdm-build/
 
 # pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
+#   类似 Pipfile.lock，一般建议将 pixi.lock 提交到版本控制
 #pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
+#   Pixi 会在 .pixi 目录下创建虚拟环境（类似 .venv），通常不应提交到版本控制
 .pixi
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+# PEP 582 本地包目录（如 pyflow、pdm 使用）
 __pypackages__/
 
-# Celery stuff
+# Celery 任务队列相关
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
+# SageMath 解析后的脚本
 *.sage.py
 
-# Environments
+# 环境配置 / 虚拟环境目录
 .env
 .envrc
 .venv
@@ -144,64 +137,96 @@ ENV/
 env.bak/
 venv.bak/
 
-# Spyder project settings
+# Spyder 项目设置
 .spyderproject
 .spyproject
 
-# Rope project settings
+# Rope 项目设置
 .ropeproject
 
-# mkdocs documentation
+# mkdocs 文档构建输出
 /site
 
-# mypy
+# mypy 类型检查缓存
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
+# Pyre 类型检查器
 .pyre/
 
-# pytype static type analyzer
+# pytype 静态类型分析工具
 .pytype/
 
-# Cython debug symbols
+# Cython 调试符号
 cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+# PyCharm / JetBrains 系编辑器
+#  JetBrains 官方模板见：https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+#  可以加入全局 gitignore 或合并到本文件
+#  若要“一刀切”忽略整个 .idea 目录，可取消下行注释（一般不推荐）
 #.idea/
 
 # Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
+# Abstra 是一个 AI 驱动的流程自动化框架
+# 忽略包含用户凭据、本地状态和设置的目录
+# 详见：https://abstra.io/docs
 .abstra/
 
 # Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
+#  VS Code 专用模板见：https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+#  可加入全局 gitignore 或合并到本文件
+#  如需忽略整个 .vscode 目录，可取消下行注释
 # .vscode/
 
-# Ruff stuff:
+# Ruff 工具缓存
 .ruff_cache/
 
-# PyPI configuration file
+# PyPI 配置文件
 .pypirc
 
 # Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
+#  Cursor 是一款 AI 代码编辑器
+#  `.cursorignore` 指定在自动补全、代码分析等 AI 功能中需要排除的文件/目录
+#  适合对敏感数据做额外过滤，详见：https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
 
-# Marimo
+# Marimo（交互式 Python 应用框架）
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ---- 项目通用忽略规则（中文说明） ----
+# 基于官方 Python .gitignore 模板，下面是本项目额外需要忽略的内容。
+
+# 虚拟环境目录（本地创建）
+.venv/
+env/
+venv/
+
+# 单元测试 / 覆盖率额外文件
+htmlcov/
+*.cover
+
+# Windows 可执行文件
+*.exe
+*.dll
+
+# 项目特定临时输出目录
+output_test/
+
+# LaTeX / 临时文档（如果使用）
+*.aux
+*.out
+*.toc
+*.synctex.gz
+
+# IDE / 编辑器配置和临时文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
