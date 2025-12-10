@@ -1,0 +1,381 @@
+"""智能排版与格式优化模块"""
+
+import os
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+from .ai_service import DeepSeekService
+from .docx_to_md import DocxToMarkdown
+from .md_converter import MarkdownConverter
+from .config import DEFAULT_STYLES
+
+
+class SmartFormatter:
+    """智能排版与格式优化器"""
+    
+    def __init__(self, api_key: str = None):
+        self.ai_service = DeepSeekService(api_key)
+        self.docx_to_md = DocxToMarkdown()
+        self.md_converter = MarkdownConverter()
+    
+    def format_document(self, input_path: str, output_path: str,
+                       styles: Dict[str, Any] = None,
+                       use_ai: bool = True,
+                       progress_callback=None) -> str:
+        """智能格式化文档
+        
+        支持输入格式: .docx, .md
+        输出格式: .docx
+        
+        Args:
+            input_path: 输入文件路径
+            output_path: 输出DOCX文件路径
+            styles: 自定义样式配置
+            use_ai: 是否使用AI优化排版
+            progress_callback: 进度回调函数
+            
+        Returns:
+            输出文件路径
+        """
+        input_path = Path(input_path)
+        output_path = Path(output_path)
+        
+        if not input_path.exists():
+            raise FileNotFoundError(f"文件不存在: {input_path}")
+        
+        suffix = input_path.suffix.lower()
+        
+        if progress_callback:
+            progress_callback(5, "读取文件...")
+        
+        # 步骤1: 将文件转换为Markdown（如果是DOCX）
+        if suffix in ['.docx', '.doc']:
+            if progress_callback:
+                progress_callback(10, "将Word转换为Markdown...")
+            
+            md_content = self.docx_to_md.convert_to_markdown(str(input_path))
+            base_dir = input_path.parent
+            
+        elif suffix in ['.md', '.markdown']:
+            with open(input_path, 'r', encoding='utf-8') as f:
+                md_content = f.read()
+            base_dir = input_path.parent
+        else:
+            raise ValueError(f"不支持的文件格式: {suffix}")
+        
+        if progress_callback:
+            progress_callback(30, "文件读取完成")
+        
+        # 步骤2: 使用AI优化Markdown排版（如果启用）
+        if use_ai:
+            if progress_callback:
+                progress_callback(35, "使用AI优化排版...")
+            
+            try:
+                md_content = self.ai_service.optimize_markdown(md_content)
+                if progress_callback:
+                    progress_callback(60, "AI优化完成")
+            except Exception as e:
+                if progress_callback:
+                    progress_callback(60, f"AI优化跳过: {str(e)}")
+        
+        # 步骤3: 转换为DOCX并应用样式
+        if progress_callback:
+            progress_callback(65, "生成Word文档...")
+        
+        # 合并样式
+        final_styles = {**DEFAULT_STYLES}
+        if styles:
+            for key, value in styles.items():
+                if key in final_styles:
+                    final_styles[key] = {**final_styles[key], **value}
+                else:
+                    final_styles[key] = value
+        
+        self.md_converter.styles = final_styles
+        
+        def inner_progress(p, msg):
+            if progress_callback:
+                # 将内部进度映射到65-95%
+                mapped_progress = 65 + int(p * 0.3)
+                progress_callback(mapped_progress, msg)
+        
+        result = self.md_converter.convert_from_string(
+            md_content, 
+            str(output_path),
+            progress_callback=inner_progress,
+            base_dir=str(base_dir)
+        )
+        
+        if progress_callback:
+            progress_callback(100, "格式化完成")
+        
+        return result
+    
+    def preview_ai_optimization(self, content: str) -> str:
+        """预览AI优化结果
+        
+        Args:
+            content: Markdown内容
+            
+        Returns:
+            优化后的Markdown内容
+        """
+        return self.ai_service.optimize_markdown(content)
+    
+    def test_ai_connection(self) -> bool:
+        """测试AI服务连接"""
+        return self.ai_service.test_connection()
+
+    def apply_selective_format(self, input_path: str, output_path: str,
+                               paragraph_mappings: Dict[int, str],
+                               styles: Dict[str, Any] = None,
+                               progress_callback=None) -> str:
+        """选择性格式化：只修改用户指定的段落，其他保持原样
+        
+        Args:
+            input_path: 输入DOCX文件路径
+            output_path: 输出DOCX文件路径
+            paragraph_mappings: {段落索引: 类型} 的映射，只有这些段落会被修改
+            styles: 样式配置
+            progress_callback: 进度回调
+            
+        Returns:
+            输出文件路径
+        """
+        from docx import Document
+        from docx.shared import Pt, Cm
+        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+        from docx.oxml.ns import qn
+        from .config import get_font_size_pt
+        
+        if progress_callback:
+            progress_callback(10, "读取文档...")
+        
+        # 打开原始文档
+        doc = Document(input_path)
+        
+        # 合并样式配置
+        final_styles = {**DEFAULT_STYLES}
+        if styles:
+            for key, value in styles.items():
+                if key in final_styles:
+                    final_styles[key] = {**final_styles[key], **value}
+                else:
+                    final_styles[key] = value
+        
+        if progress_callback:
+            progress_callback(30, "应用格式修改...")
+        
+        total = len(paragraph_mappings)
+        processed = 0
+        
+        for para_idx, type_id in paragraph_mappings.items():
+            if para_idx < len(doc.paragraphs):
+                para = doc.paragraphs[para_idx]
+                style = final_styles.get(type_id, final_styles.get('body', {}))
+                
+                self._apply_style_to_paragraph(para, style, type_id)
+                
+                processed += 1
+                if progress_callback and total > 0:
+                    prog = 30 + int(60 * processed / total)
+                    progress_callback(prog, f"格式化段落 {processed}/{total}")
+        
+        if progress_callback:
+            progress_callback(95, "保存文档...")
+        
+        doc.save(output_path)
+        
+        if progress_callback:
+            progress_callback(100, "完成")
+        
+        return output_path
+
+    def _apply_style_to_paragraph(self, para, style: dict, type_id: str):
+        """将样式应用到单个段落"""
+        from docx.shared import Pt, Cm
+        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+        from docx.oxml.ns import qn
+        from .config import get_font_size_pt
+        
+        pf = para.paragraph_format
+        
+        # 段前段后间距
+        if 'space_before' in style:
+            pf.space_before = Pt(style['space_before'])
+        if 'space_after' in style:
+            pf.space_after = Pt(style['space_after'])
+        
+        # 行距
+        spacing_type = style.get('line_spacing_type', '1.5倍行距')
+        spacing_value = style.get('line_spacing_value', 1.5)
+        if isinstance(spacing_value, str):
+            try:
+                spacing_value = float(spacing_value)
+            except:
+                spacing_value = 1.5
+        
+        if spacing_type == '固定值':
+            pf.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+            pf.line_spacing = Pt(float(spacing_value))
+        else:
+            pf.line_spacing = float(spacing_value)
+        
+        # 对齐方式
+        alignment = style.get('alignment', 'left')
+        align_map = {
+            'left': WD_ALIGN_PARAGRAPH.LEFT,
+            'center': WD_ALIGN_PARAGRAPH.CENTER,
+            'right': WD_ALIGN_PARAGRAPH.RIGHT,
+            'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
+        }
+        pf.alignment = align_map.get(alignment, WD_ALIGN_PARAGRAPH.LEFT)
+        
+        # 首行缩进（正文）
+        if type_id == 'body' and 'first_line_indent' in style:
+            indent_chars = style['first_line_indent']
+            font_size = style.get('font_size', 12)
+            if isinstance(font_size, str):
+                font_size = get_font_size_pt(font_size)
+            pf.first_line_indent = Pt(font_size * indent_chars)
+        
+        # 字体设置
+        font_cn = style.get('font_name_cn', style.get('font_name', '宋体'))
+        font_en = style.get('font_name_en', style.get('font_name', 'Times New Roman'))
+        font_size = style.get('font_size', 12)
+        if isinstance(font_size, str):
+            font_size = get_font_size_pt(font_size)
+        bold = style.get('bold', False)
+        
+        for run in para.runs:
+            run.font.name = font_en
+            run.font.size = Pt(font_size)
+            run.font.bold = bold
+            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+
+
+class StylePreset:
+    """样式预设（使用新格式）"""
+    
+    # 学术论文样式
+    ACADEMIC = {
+        "heading1": {
+            "font_name_cn": "黑体",
+            "font_name_en": "Times New Roman",
+            "font_size": "三号",
+            "bold": True,
+            "space_before": 24,
+            "space_after": 12,
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 20,
+            "alignment": "center",
+        },
+        "heading2": {
+            "font_name_cn": "黑体",
+            "font_name_en": "Times New Roman",
+            "font_size": "四号",
+            "bold": True,
+            "space_before": 12,
+            "space_after": 6,
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 20,
+            "alignment": "left",
+        },
+        "heading3": {
+            "font_name_cn": "黑体",
+            "font_name_en": "Times New Roman",
+            "font_size": "小四",
+            "bold": True,
+            "space_before": 6,
+            "space_after": 3,
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 20,
+            "alignment": "left",
+        },
+        "body": {
+            "font_name_cn": "宋体",
+            "font_name_en": "Times New Roman",
+            "font_size": "小四",
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 20,
+            "first_line_indent": 2,
+            "alignment": "justify",
+        },
+        "caption": {
+            "font_name_cn": "宋体",
+            "font_name_en": "Times New Roman",
+            "font_size": "五号",
+            "line_spacing_type": "单倍行距",
+            "line_spacing_value": 1.0,
+            "alignment": "center",
+        },
+    }
+    
+    # 公文样式
+    OFFICIAL = {
+        "heading1": {
+            "font_name_cn": "方正小标宋简体",
+            "font_name_en": "Times New Roman",
+            "font_size": "二号",
+            "bold": False,
+            "space_before": 0,
+            "space_after": 0,
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 28,
+            "alignment": "center",
+        },
+        "heading2": {
+            "font_name_cn": "黑体",
+            "font_name_en": "Times New Roman",
+            "font_size": "三号",
+            "bold": False,
+            "space_before": 12,
+            "space_after": 6,
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 28,
+            "alignment": "left",
+        },
+        "heading3": {
+            "font_name_cn": "楷体",
+            "font_name_en": "Times New Roman",
+            "font_size": "三号",
+            "bold": False,
+            "space_before": 6,
+            "space_after": 3,
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 28,
+            "alignment": "left",
+        },
+        "body": {
+            "font_name_cn": "仿宋",
+            "font_name_en": "Times New Roman",
+            "font_size": "三号",
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 28,
+            "first_line_indent": 2,
+            "alignment": "justify",
+        },
+        "caption": {
+            "font_name_cn": "楷体",
+            "font_name_en": "Times New Roman",
+            "font_size": "小四",
+            "line_spacing_type": "固定值",
+            "line_spacing_value": 28,
+            "alignment": "center",
+        },
+    }
+    
+    @classmethod
+    def get_preset(cls, name: str) -> dict:
+        """获取预设样式"""
+        presets = {
+            "academic": cls.ACADEMIC,
+            "official": cls.OFFICIAL,
+        }
+        return presets.get(name.lower(), DEFAULT_STYLES)
+    
+    @classmethod
+    def list_presets(cls) -> list:
+        """列出所有预设"""
+        return ["academic", "official"]
