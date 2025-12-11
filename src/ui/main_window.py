@@ -11,6 +11,7 @@ from PyQt5.QtGui import QIcon
 
 from .styles import MAIN_STYLE
 from .smart_format_page import SmartFormatPage
+from ..version import get_version_string
 
 
 class MainWindow(QMainWindow):
@@ -85,7 +86,7 @@ class MainWindow(QMainWindow):
         layout.addStretch()
         
         # 版本号与作者信息
-        version_label = QLabel("v1.0.1 by rayL_K")
+        version_label = QLabel(get_version_string())
         version_label.setStyleSheet("color: #7f8c8d; font-size: 14px;")
         layout.addWidget(version_label)
         
