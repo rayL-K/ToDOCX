@@ -25,7 +25,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+output/
 # PyInstaller 打包配置
 #  通常由 Python 脚本根据模板生成，用于在打包前写入日期等元信息
 *.manifest
