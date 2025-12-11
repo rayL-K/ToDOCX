@@ -324,14 +324,14 @@ class SmartFormatter:
         self._update_rPr_font(rPr, font_cn, font_en, font_size, bold)
     
     def _update_rPr_font(self, rPr, font_cn: str, font_en: str, font_size: float, bold: bool):
-        """更新 rPr 元素的字体设置"""
+        """更新 rPr 元素的字体设置（包括清除颜色）"""
         from docx.oxml.ns import qn
         from docx.oxml import OxmlElement
         
-        # 清除现有字体设置
+        # 清除现有字体设置和颜色
         for child in list(rPr):
             tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
-            if tag in ['rFonts', 'sz', 'szCs', 'b', 'bCs']:
+            if tag in ['rFonts', 'sz', 'szCs', 'b', 'bCs', 'color']:
                 rPr.remove(child)
         
         # 设置字体
@@ -357,6 +357,11 @@ class SmartFormatter:
             rPr.append(b)
             bCs = OxmlElement('w:bCs')
             rPr.append(bCs)
+        
+        # 设置颜色为黑色（清除彩色编号）
+        color = OxmlElement('w:color')
+        color.set(qn('w:val'), '000000')
+        rPr.append(color)
 
 
 class StylePreset:
