@@ -155,9 +155,10 @@ class MarkdownConverter:
         md_content = re.sub(r'\$([^\$]+)\$', save_inline_formula, md_content)
         
         # 转换为HTML（用于解析复杂结构）
+        # 注意：不使用nl2br扩展，避免列表项中的换行产生额外空行
         html = markdown.markdown(
             md_content,
-            extensions=['tables', 'fenced_code', 'toc', 'nl2br']
+            extensions=['tables', 'fenced_code', 'toc']
         )
         
         soup = BeautifulSoup(html, 'lxml')
@@ -319,18 +320,26 @@ class MarkdownConverter:
         elif element.name == 'ul':
             for li in element.find_all('li', recursive=False):
                 text = li.get_text()
+                # 清理多余的空白和换行
+                text = ' '.join(text.split())
                 text = self._restore_special_content(
                     text, code_blocks, inline_codes, formulas, inline_formulas
                 )
-                p = doc.add_paragraph(text, style='List Bullet')
+                if text.strip():
+                    p = doc.add_paragraph(text, style='List Bullet')
+                    self._apply_list_style(p)
                 
         elif element.name == 'ol':
             for li in element.find_all('li', recursive=False):
                 text = li.get_text()
+                # 清理多余的空白和换行
+                text = ' '.join(text.split())
                 text = self._restore_special_content(
                     text, code_blocks, inline_codes, formulas, inline_formulas
                 )
-                p = doc.add_paragraph(text, style='List Number')
+                if text.strip():
+                    p = doc.add_paragraph(text, style='List Number')
+                    self._apply_list_style(p)
                 
         elif element.name == 'blockquote':
             text = element.get_text()
@@ -404,6 +413,42 @@ class MarkdownConverter:
         if indent > 0:
             font_size = self._get_font_size(style)
             pf.first_line_indent = Pt(font_size * indent)
+        
+        # 对齐方式
+        alignment = style.get('alignment', 'left')
+        if alignment == 'justify':
+            pf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        elif alignment == 'center':
+            pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        elif alignment == 'right':
+            pf.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        else:
+            pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        
+        # 字体设置
+        font_cn = style.get('font_name_cn', style.get('font_name', '宋体'))
+        font_en = style.get('font_name_en', style.get('font_name', 'Times New Roman'))
+        font_size = self._get_font_size(style)
+        
+        for run in paragraph.runs:
+            run.font.name = font_en
+            run.font.size = Pt(font_size)
+            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+
+    def _apply_list_style(self, paragraph):
+        """应用列表样式（无首行缩进，无段前段后间距）"""
+        style = self.styles.get('body', {})
+        pf = paragraph.paragraph_format
+        
+        # 行距
+        self._apply_line_spacing(pf, style)
+        
+        # 列表项不设置段前段后间距，避免空行
+        pf.space_before = Pt(0)
+        pf.space_after = Pt(0)
+        
+        # 列表项不设置首行缩进
+        pf.first_line_indent = Pt(0)
         
         # 对齐方式
         alignment = style.get('alignment', 'left')

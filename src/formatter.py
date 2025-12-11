@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from .ai_service import DeepSeekService
 from .docx_to_md import DocxToMarkdown
 from .md_converter import MarkdownConverter
 from .config import DEFAULT_STYLES
@@ -14,7 +13,6 @@ class SmartFormatter:
     """智能排版与格式优化器"""
     
     def __init__(self, api_key: str = None):
-        self.ai_service = DeepSeekService(api_key)
         self.docx_to_md = DocxToMarkdown()
         self.md_converter = MarkdownConverter()
     
@@ -66,18 +64,9 @@ class SmartFormatter:
         if progress_callback:
             progress_callback(30, "文件读取完成")
         
-        # 步骤2: 使用AI优化Markdown排版（如果启用）
-        if use_ai:
-            if progress_callback:
-                progress_callback(35, "使用AI优化排版...")
-            
-            try:
-                md_content = self.ai_service.optimize_markdown(md_content)
-                if progress_callback:
-                    progress_callback(60, "AI优化完成")
-            except Exception as e:
-                if progress_callback:
-                    progress_callback(60, f"AI优化跳过: {str(e)}")
+        # 步骤2: 跳过AI优化（已移除AI模块）
+        if progress_callback:
+            progress_callback(60, "准备生成文档...")
         
         # 步骤3: 转换为DOCX并应用样式
         if progress_callback:
@@ -112,20 +101,6 @@ class SmartFormatter:
         
         return result
     
-    def preview_ai_optimization(self, content: str) -> str:
-        """预览AI优化结果
-        
-        Args:
-            content: Markdown内容
-            
-        Returns:
-            优化后的Markdown内容
-        """
-        return self.ai_service.optimize_markdown(content)
-    
-    def test_ai_connection(self) -> bool:
-        """测试AI服务连接"""
-        return self.ai_service.test_connection()
 
     def apply_selective_format(self, input_path: str, output_path: str,
                                paragraph_mappings: Dict[int, str],
@@ -175,7 +150,7 @@ class SmartFormatter:
                 para = doc.paragraphs[para_idx]
                 style = final_styles.get(type_id, final_styles.get('body', {}))
                 
-                self._apply_style_to_paragraph(para, style, type_id)
+                self._apply_style_to_paragraph(para, style, type_id, doc)
                 
                 processed += 1
                 if progress_callback and total > 0:
@@ -192,20 +167,28 @@ class SmartFormatter:
         
         return output_path
 
-    def _apply_style_to_paragraph(self, para, style: dict, type_id: str):
+    def _apply_style_to_paragraph(self, para, style: dict, type_id: str, doc=None):
         """将样式应用到单个段落"""
         from docx.shared import Pt, Cm
         from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
         from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
         from .config import get_font_size_pt
         
         pf = para.paragraph_format
         
-        # 段前段后间距
-        if 'space_before' in style:
-            pf.space_before = Pt(style['space_before'])
-        if 'space_after' in style:
-            pf.space_after = Pt(style['space_after'])
+        # 段前段后间距（编号段落不设置额外间距以避免空行）
+        is_numbered = self._is_numbered_paragraph(para)
+        self._doc = doc  # 保存文档引用供后续使用
+        if not is_numbered:
+            if 'space_before' in style:
+                pf.space_before = Pt(style['space_before'])
+            if 'space_after' in style:
+                pf.space_after = Pt(style['space_after'])
+        else:
+            # 编号段落：设置较小的间距避免空行
+            pf.space_before = Pt(0)
+            pf.space_after = Pt(0)
         
         # 行距
         spacing_type = style.get('line_spacing_type', '1.5倍行距')
@@ -253,6 +236,127 @@ class SmartFormatter:
             run.font.size = Pt(font_size)
             run.font.bold = bold
             run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+        
+        # 如果是编号段落，还需要修改编号的字体
+        if is_numbered:
+            self._apply_numbering_font(para, font_cn, font_en, font_size, bold)
+
+    def _is_numbered_paragraph(self, para) -> bool:
+        """检查段落是否为编号段落"""
+        from docx.oxml.ns import qn
+        pPr = para._element.pPr
+        if pPr is not None:
+            numPr = pPr.find(qn('w:numPr'))
+            if numPr is not None:
+                return True
+        return False
+
+    def _apply_numbering_font(self, para, font_cn: str, font_en: str, font_size: float, bold: bool):
+        """应用字体到编号 - 通过修改文档的编号定义"""
+        from docx.shared import Pt
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
+        
+        pPr = para._element.pPr
+        if pPr is None:
+            return
+        
+        # 获取编号属性
+        numPr = pPr.find(qn('w:numPr'))
+        if numPr is None:
+            return
+        
+        # 获取 numId 和 ilvl
+        numId_elem = numPr.find(qn('w:numId'))
+        ilvl_elem = numPr.find(qn('w:ilvl'))
+        
+        if numId_elem is None:
+            return
+        
+        numId = numId_elem.get(qn('w:val'))
+        ilvl = ilvl_elem.get(qn('w:val')) if ilvl_elem is not None else '0'
+        
+        # 使用保存的文档引用来修改编号定义
+        doc = getattr(self, '_doc', None)
+        if doc is not None:
+            try:
+                if hasattr(doc, 'part') and hasattr(doc.part, 'numbering_part') and doc.part.numbering_part:
+                    numbering = doc.part.numbering_part.numbering_definitions._numbering
+                    
+                    # 查找对应的 num 元素
+                    for num in numbering.findall(qn('w:num')):
+                        if num.get(qn('w:numId')) == numId:
+                            abstractNumId = num.find(qn('w:abstractNumId'))
+                            if abstractNumId is not None:
+                                absNumId = abstractNumId.get(qn('w:val'))
+                                # 查找 abstractNum
+                                for absNum in numbering.findall(qn('w:abstractNum')):
+                                    if absNum.get(qn('w:abstractNumId')) == absNumId:
+                                        # 查找对应级别的 lvl
+                                        for lvl in absNum.findall(qn('w:lvl')):
+                                            if lvl.get(qn('w:ilvl')) == ilvl:
+                                                self._update_lvl_font(lvl, font_cn, font_en, font_size, bold)
+                                                break
+                                        break
+                            break
+            except Exception:
+                pass
+        
+        # 同时在段落级别设置 rPr 作为备用
+        rPr = pPr.find(qn('w:rPr'))
+        if rPr is None:
+            rPr = OxmlElement('w:rPr')
+            pPr.insert(0, rPr)
+        
+        self._update_rPr_font(rPr, font_cn, font_en, font_size, bold)
+    
+    def _update_lvl_font(self, lvl, font_cn: str, font_en: str, font_size: float, bold: bool):
+        """更新编号级别的字体设置"""
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
+        
+        # 查找或创建 rPr
+        rPr = lvl.find(qn('w:rPr'))
+        if rPr is None:
+            rPr = OxmlElement('w:rPr')
+            lvl.append(rPr)
+        
+        self._update_rPr_font(rPr, font_cn, font_en, font_size, bold)
+    
+    def _update_rPr_font(self, rPr, font_cn: str, font_en: str, font_size: float, bold: bool):
+        """更新 rPr 元素的字体设置"""
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
+        
+        # 清除现有字体设置
+        for child in list(rPr):
+            tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+            if tag in ['rFonts', 'sz', 'szCs', 'b', 'bCs']:
+                rPr.remove(child)
+        
+        # 设置字体
+        rFonts = OxmlElement('w:rFonts')
+        rFonts.set(qn('w:ascii'), font_en)
+        rFonts.set(qn('w:hAnsi'), font_en)
+        rFonts.set(qn('w:eastAsia'), font_cn)
+        rFonts.set(qn('w:cs'), font_en)
+        rPr.append(rFonts)
+        
+        # 设置字号
+        sz = OxmlElement('w:sz')
+        sz.set(qn('w:val'), str(int(font_size * 2)))
+        rPr.append(sz)
+        
+        szCs = OxmlElement('w:szCs')
+        szCs.set(qn('w:val'), str(int(font_size * 2)))
+        rPr.append(szCs)
+        
+        # 设置粗体
+        if bold:
+            b = OxmlElement('w:b')
+            rPr.append(b)
+            bCs = OxmlElement('w:bCs')
+            rPr.append(bCs)
 
 
 class StylePreset:

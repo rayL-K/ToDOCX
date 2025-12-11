@@ -15,7 +15,7 @@ from PyQt5.QtGui import QFont, QCursor
 
 from .components import FileDropZone, ProgressWidget, SectionHeader, StyledButton
 from ..config import (
-    DEFAULT_STYLES, DEFAULT_OUTPUT_PATH, FONT_SIZE_MAP,
+    DEFAULT_STYLES, FONT_SIZE_MAP,
     FONT_SIZE_OPTIONS, get_font_size_pt
 )
 from ..template_manager import TemplateManager
@@ -145,11 +145,23 @@ class SmartFormatPage(QWidget):
         template_tab = self._create_template_tab()
         self.tab_widget.addTab(template_tab, "模板")
 
-        # 输出设置标签页
-        output_tab = self._create_output_tab()
-        self.tab_widget.addTab(output_tab, "输出")
-
         layout.addWidget(self.tab_widget)
+
+        # 输出路径设置（移到左侧底部）
+        output_group = QGroupBox("输出路径")
+        output_layout = QHBoxLayout(output_group)
+        output_layout.setContentsMargins(4, 8, 4, 4)
+        output_layout.setSpacing(4)
+        
+        self.output_path = QLineEdit()
+        self.output_path.setPlaceholderText("默认与源文件同目录")
+        self.browse_btn = QPushButton("...")
+        self.browse_btn.setMaximumWidth(30)
+        self.browse_btn.clicked.connect(self._browse_output)
+        output_layout.addWidget(self.output_path)
+        output_layout.addWidget(self.browse_btn)
+        
+        layout.addWidget(output_group)
 
         # 进度显示
         self.progress_widget = ProgressWidget()
@@ -285,7 +297,7 @@ class SmartFormatPage(QWidget):
     def _set_selected_type(self, type_id):
         """设置选中项的类型"""
         items = self.paragraph_tree.selectedItems()
-        is_latex = getattr(self, 'current_file_type', None) == 'latex'
+        file_type = getattr(self, 'current_file_type', None)
 
         for item in items:
             sig = item.data(0, Qt.UserRole)
@@ -293,7 +305,7 @@ class SmartFormatPage(QWidget):
                 if type_id == "original":
                     # 恢复原格式：删除映射
                     self.format_mappings.pop(sig, None)
-                    if not is_latex:
+                    if file_type == 'docx':
                         # DOCX: 从分析器获取原始类型
                         group = self.analyzer.format_groups.get(sig)
                         original_type = group.original_type if group and group.original_type else "body"
@@ -301,7 +313,7 @@ class SmartFormatPage(QWidget):
                 else:
                     # 更新映射
                     self.format_mappings[sig] = type_id
-                    if not is_latex:
+                    if file_type == 'docx':
                         # DOCX: 更新分析器
                         self.analyzer.assign_type_to_format(sig, type_id)
 
@@ -312,8 +324,10 @@ class SmartFormatPage(QWidget):
                 for i in range(self.paragraph_tree.topLevelItemCount()):
                     tree_item = self.paragraph_tree.topLevelItem(i)
                     if tree_item.data(0, Qt.UserRole) == first_sig:
-                        if is_latex:
+                        if file_type == 'latex':
                             self._refresh_latex_item_type(tree_item)
+                        elif file_type == 'markdown':
+                            self._refresh_markdown_item_type(tree_item)
                         else:
                             self._refresh_item_type(tree_item)
 
@@ -800,24 +814,6 @@ class SmartFormatPage(QWidget):
 
         return styles
 
-    def _create_output_tab(self):
-        """创建输出设置标签页"""
-        widget = QWidget()
-        layout = QFormLayout(widget)
-        layout.setSpacing(8)
-
-        output_row = QHBoxLayout()
-        self.output_path = QLineEdit()
-        self.output_path.setText(DEFAULT_OUTPUT_PATH)
-        self.browse_btn = QPushButton("...")
-        self.browse_btn.setMaximumWidth(30)
-        self.browse_btn.clicked.connect(self._browse_output)
-        output_row.addWidget(self.output_path)
-        output_row.addWidget(self.browse_btn)
-        layout.addRow("输出:", output_row)
-
-        return widget
-
     def _on_file_selected(self, file_path):
         """文件选择后的处理"""
         self.paragraph_tree.clear()
@@ -844,13 +840,10 @@ class SmartFormatPage(QWidget):
             self.current_file_type = 'markdown'
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
-                    lines = f.readlines()[:100]
-                for i, line in enumerate(lines):
-                    line = line.strip()
-                    if line:
-                        item = QTreeWidgetItem(["正文", line[:80]])
-                        self.paragraph_tree.addTopLevelItem(item)
-                self.format_info_label.setText("Markdown文件")
+                    content = f.read()
+                self.md_paragraphs = self._parse_markdown(content)
+                self._populate_markdown_tree()
+                self.format_info_label.setText(f"Markdown文件：共 {len(self.md_paragraphs)} 段")
             except Exception as e:
                 self.format_info_label.setText(f"读取失败: {e}")
 
@@ -897,6 +890,136 @@ class SmartFormatPage(QWidget):
             display_text = base_text
             color = Qt.black
 
+        item.setText(0, display_text)
+        item.setForeground(0, color)
+
+    def _parse_markdown(self, content: str) -> list:
+        """解析Markdown内容，识别各段落类型
+        
+        Returns:
+            [(index, type_id, text, original_text), ...]
+        """
+        import re
+        paragraphs = []
+        lines = content.split('\n')
+        
+        in_code_block = False
+        code_block_content = []
+        para_idx = 0
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.strip()
+            
+            # 代码块开始/结束
+            if stripped.startswith('```'):
+                if in_code_block:
+                    # 代码块结束
+                    code_text = '\n'.join(code_block_content)
+                    if code_text.strip():
+                        paragraphs.append((para_idx, 'code', code_text[:80], code_text))
+                        para_idx += 1
+                    code_block_content = []
+                    in_code_block = False
+                else:
+                    # 代码块开始
+                    in_code_block = True
+                i += 1
+                continue
+            
+            if in_code_block:
+                code_block_content.append(line)
+                i += 1
+                continue
+            
+            # 空行跳过
+            if not stripped:
+                i += 1
+                continue
+            
+            # 标题识别
+            if stripped.startswith('######'):
+                paragraphs.append((para_idx, 'heading4', stripped[6:].strip()[:80], stripped))
+                para_idx += 1
+            elif stripped.startswith('#####'):
+                paragraphs.append((para_idx, 'heading4', stripped[5:].strip()[:80], stripped))
+                para_idx += 1
+            elif stripped.startswith('####'):
+                paragraphs.append((para_idx, 'heading4', stripped[4:].strip()[:80], stripped))
+                para_idx += 1
+            elif stripped.startswith('###'):
+                paragraphs.append((para_idx, 'heading3', stripped[3:].strip()[:80], stripped))
+                para_idx += 1
+            elif stripped.startswith('##'):
+                paragraphs.append((para_idx, 'heading2', stripped[2:].strip()[:80], stripped))
+                para_idx += 1
+            elif stripped.startswith('#'):
+                paragraphs.append((para_idx, 'heading1', stripped[1:].strip()[:80], stripped))
+                para_idx += 1
+            # 引用
+            elif stripped.startswith('>'):
+                paragraphs.append((para_idx, 'quote', stripped[1:].strip()[:80], stripped))
+                para_idx += 1
+            # 图片
+            elif re.match(r'^!\[.*\]\(.*\)$', stripped):
+                paragraphs.append((para_idx, 'caption', stripped[:80], stripped))
+                para_idx += 1
+            # 公式块
+            elif stripped.startswith('$$') or stripped.startswith('$'):
+                paragraphs.append((para_idx, 'formula', stripped[:80], stripped))
+                para_idx += 1
+            # 普通正文
+            else:
+                paragraphs.append((para_idx, 'body', stripped[:80], stripped))
+                para_idx += 1
+            
+            i += 1
+        
+        return paragraphs
+
+    def _populate_markdown_tree(self):
+        """填充Markdown段落树"""
+        self.paragraph_tree.clear()
+        
+        for para_idx, type_id, preview_text, original_text in self.md_paragraphs:
+            item = QTreeWidgetItem(["", preview_text])
+            # 使用类型作为签名（同类型共享）
+            sig = f"md_type_{type_id}"
+            item.setData(0, Qt.UserRole, sig)
+            item.setData(1, Qt.UserRole, para_idx)
+            item.setData(2, Qt.UserRole, type_id)  # 原始类型
+            self.paragraph_tree.addTopLevelItem(item)
+        
+        # 刷新显示
+        for i in range(self.paragraph_tree.topLevelItemCount()):
+            self._refresh_markdown_item_type(self.paragraph_tree.topLevelItem(i))
+
+    def _refresh_markdown_item_type(self, item):
+        """刷新Markdown段落项的类型显示"""
+        sig = item.data(0, Qt.UserRole)
+        if not sig or not sig.startswith("md_type_"):
+            return
+        
+        original_type = item.data(2, Qt.UserRole) or "body"
+        
+        # 判断是否用户自定义类型
+        if sig in self.format_mappings:
+            type_id = self.format_mappings[sig]
+            is_original = False
+        else:
+            type_id = original_type
+            is_original = True
+        
+        base_text = ELEMENT_TYPE_NAMES.get(type_id, "正文")
+        
+        if is_original:
+            display_text = f"{base_text}（原）"
+            color = Qt.gray
+        else:
+            display_text = base_text
+            color = Qt.black
+        
         item.setText(0, display_text)
         item.setForeground(0, color)
 
@@ -977,10 +1100,13 @@ class SmartFormatPage(QWidget):
             QMessageBox.warning(self, "提示", "请先选择文件")
             return
 
-        output_dir = self.output_path.text() or DEFAULT_OUTPUT_PATH
+        input_path = Path(input_file)
+        # 输出目录：优先使用用户指定，否则使用源文件所在目录
+        output_dir = self.output_path.text().strip()
+        if not output_dir:
+            output_dir = str(input_path.parent)
         os.makedirs(output_dir, exist_ok=True)
 
-        input_path = Path(input_file)
         styles = self._get_current_styles()
 
         # 根据文件类型选择不同的处理方式
@@ -1018,17 +1144,15 @@ class SmartFormatPage(QWidget):
         else:
             # Markdown 文件：全量转换为 DOCX
             output_file = os.path.join(output_dir, f"{input_path.stem}_formatted.docx")
-            use_ai = self.use_ai_check.isChecked()
-            api_key = self.api_key_input.text() or None
             
             from ..formatter import SmartFormatter
-            formatter = SmartFormatter(api_key)
+            formatter = SmartFormatter()
             self.worker = ConvertWorker(
                 formatter.format_document,
                 input_file,
                 output_file,
                 styles=styles,
-                use_ai=use_ai
+                use_ai=False
             )
         
         self.worker.progress.connect(self.progress_widget.set_progress)
