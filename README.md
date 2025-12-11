@@ -40,7 +40,6 @@
 
 ```bash
 uv sync
-uv pip install PyQt5==5.15.9
 ```
 
 确保在 Windows 上使用本项目自带的虚拟环境：`.venv`。
