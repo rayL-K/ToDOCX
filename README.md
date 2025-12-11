@@ -2,7 +2,7 @@
 
 琐碎排版，一键告别。
 
-一个基于 PyQt 的桌面工具，将 DOCX / LaTeX(.tex) / Markdown(.md) 统一转换为排版良好的 DOCX 文档，并支持自定义样式模板。
+一个基于 PyQt5 的桌面工具，将 DOCX / LaTeX(.tex) / Markdown(.md) 统一转换为排版良好的 DOCX 文档，并支持自定义样式模板。
 
 ## 功能
 
@@ -68,24 +68,3 @@ uv pip install PyQt5==5.15.9
 5. 左侧底部「输出路径」：留空则输出到源文件所在目录，也可自定义路径。
 6. 右侧预览区中，可查看段落类型识别结果，右键修改段落类型。
 7. 点击底部的「开始转换」按钮，生成新的 DOCX 文件。
-
-## 打包为 Windows 可执行文件（EXE）
-
-推荐使用 PyInstaller 进行打包（在虚拟环境中执行）：
-
-1. 安装 PyInstaller：
-
-```bash
-.\.venv\Scripts\python.exe -m pip install pyinstaller
-```
-
-2. 在项目根目录打包：
-
-```bash
-.\.venv\Scripts\pyinstaller --name ToDOCX \
-    --windowed \
-    --onefile \
-    main.py
-```
-
-执行成功后，在 `dist/` 目录下会生成一个 `ToDOCX.exe`，可直接分发给其他 Windows 用户使用（前提是系统已安装相应的字体）。
