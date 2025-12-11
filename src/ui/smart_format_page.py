@@ -10,8 +10,15 @@ from PyQt5.QtWidgets import (
     QListWidgetItem, QInputDialog, QRadioButton, QButtonGroup,
     QMenu, QAction, QTreeWidget, QTreeWidgetItem, QHeaderView
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QEvent
 from PyQt5.QtGui import QFont, QCursor
+
+
+class NoWheelComboBox(QComboBox):
+    """禁用鼠标滚轮切换选项的下拉框"""
+    def wheelEvent(self, event):
+        # 忽略滚轮事件，防止误操作
+        event.ignore()
 
 from .components import FileDropZone, ProgressWidget, SectionHeader, StyledButton
 from ..config import (
@@ -376,21 +383,21 @@ class SmartFormatPage(QWidget):
             row_layout.addWidget(label)
 
             # 中文字体
-            font_cn_combo = QComboBox()
+            font_cn_combo = NoWheelComboBox()
             font_cn_combo.addItems(["宋体", "黑体", "微软雅黑", "楷体", "仿宋"])
             font_cn_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
             font_cn_combo.setMinimumContentsLength(3)
             row_layout.addWidget(font_cn_combo)
 
             # 西文字体
-            font_en_combo = QComboBox()
+            font_en_combo = NoWheelComboBox()
             font_en_combo.addItems(["Times New Roman", "Arial", "Calibri"])
             font_en_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
             font_en_combo.setMinimumContentsLength(6)
             row_layout.addWidget(font_en_combo)
 
             # 字号
-            size_combo = QComboBox()
+            size_combo = NoWheelComboBox()
             size_combo.addItems(FONT_SIZE_OPTIONS)
             size_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
             size_combo.setMinimumContentsLength(2)
@@ -428,19 +435,19 @@ class SmartFormatPage(QWidget):
         font_row = QHBoxLayout()
         font_row.setSpacing(4)
 
-        self.body_font_cn = QComboBox()
+        self.body_font_cn = NoWheelComboBox()
         self.body_font_cn.addItems(["宋体", "黑体", "微软雅黑", "楷体", "仿宋"])
         self.body_font_cn.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.body_font_cn.setMinimumContentsLength(3)
         font_row.addWidget(self.body_font_cn)
 
-        self.body_font_en = QComboBox()
+        self.body_font_en = NoWheelComboBox()
         self.body_font_en.addItems(["Times New Roman", "Arial", "Calibri"])
         self.body_font_en.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.body_font_en.setMinimumContentsLength(6)
         font_row.addWidget(self.body_font_en)
 
-        self.body_size = QComboBox()
+        self.body_size = NoWheelComboBox()
         self.body_size.addItems(FONT_SIZE_OPTIONS)
         self.body_size.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.body_size.setMinimumContentsLength(2)
@@ -497,7 +504,7 @@ class SmartFormatPage(QWidget):
 
         indent_row.addSpacing(10)
         indent_row.addWidget(QLabel("对齐:"))
-        self.body_align = QComboBox()
+        self.body_align = NoWheelComboBox()
         self.body_align.addItems(["左", "两端", "中", "右"])
         self.body_align.setMaximumWidth(50)
         indent_row.addWidget(self.body_align)
@@ -514,19 +521,19 @@ class SmartFormatPage(QWidget):
         layout.setSpacing(4)
         layout.setContentsMargins(4, 8, 4, 4)
 
-        self.caption_font_cn = QComboBox()
+        self.caption_font_cn = NoWheelComboBox()
         self.caption_font_cn.addItems(["黑体", "宋体", "微软雅黑"])
         self.caption_font_cn.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.caption_font_cn.setMinimumContentsLength(3)
         layout.addWidget(self.caption_font_cn)
 
-        self.caption_font_en = QComboBox()
+        self.caption_font_en = NoWheelComboBox()
         self.caption_font_en.addItems(["Times New Roman", "Arial"])
         self.caption_font_en.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.caption_font_en.setMinimumContentsLength(6)
         layout.addWidget(self.caption_font_en)
 
-        self.caption_size = QComboBox()
+        self.caption_size = NoWheelComboBox()
         self.caption_size.addItems(FONT_SIZE_OPTIONS)
         self.caption_size.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.caption_size.setMinimumContentsLength(2)
@@ -545,13 +552,13 @@ class SmartFormatPage(QWidget):
         layout.setSpacing(4)
         layout.setContentsMargins(4, 8, 4, 4)
 
-        self.code_font = QComboBox()
+        self.code_font = NoWheelComboBox()
         self.code_font.addItems(["Consolas", "Courier New", "Monaco", "等线"])
         self.code_font.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.code_font.setMinimumContentsLength(6)
         layout.addWidget(self.code_font)
 
-        self.code_size = QComboBox()
+        self.code_size = NoWheelComboBox()
         self.code_size.addItems(FONT_SIZE_OPTIONS)
         self.code_size.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.code_size.setMinimumContentsLength(2)
