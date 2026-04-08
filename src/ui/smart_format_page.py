@@ -305,10 +305,12 @@ class SmartFormatPage(QWidget):
         """设置选中项的类型"""
         items = self.paragraph_tree.selectedItems()
         file_type = getattr(self, 'current_file_type', None)
+        changed_signatures = set()
 
         for item in items:
             sig = item.data(0, Qt.UserRole)
             if sig:
+                changed_signatures.add(sig)
                 if type_id == "original":
                     # 恢复原格式：删除映射
                     self.format_mappings.pop(sig, None)
@@ -324,19 +326,20 @@ class SmartFormatPage(QWidget):
                         # DOCX: 更新分析器
                         self.analyzer.assign_type_to_format(sig, type_id)
 
-        # 更新所有相同签名的项的显示
-        if items:
-            first_sig = items[0].data(0, Qt.UserRole)
-            if first_sig:
-                for i in range(self.paragraph_tree.topLevelItemCount()):
-                    tree_item = self.paragraph_tree.topLevelItem(i)
-                    if tree_item.data(0, Qt.UserRole) == first_sig:
-                        if file_type == 'latex':
-                            self._refresh_latex_item_type(tree_item)
-                        elif file_type == 'markdown':
-                            self._refresh_markdown_item_type(tree_item)
-                        else:
-                            self._refresh_item_type(tree_item)
+        if not changed_signatures:
+            return
+
+        for i in range(self.paragraph_tree.topLevelItemCount()):
+            tree_item = self.paragraph_tree.topLevelItem(i)
+            if tree_item.data(0, Qt.UserRole) not in changed_signatures:
+                continue
+
+            if file_type == 'latex':
+                self._refresh_latex_item_type(tree_item)
+            elif file_type == 'markdown':
+                self._refresh_markdown_item_type(tree_item)
+            else:
+                self._refresh_item_type(tree_item)
 
     def _create_style_tab(self):
         """创建样式设置标签页"""
@@ -860,8 +863,7 @@ class SmartFormatPage(QWidget):
 
         for para in self.latex_analyzer.paragraphs:
             item = QTreeWidgetItem(["", para.text[:80]])
-            # 使用元素类型作为签名（同类型共享签名）
-            sig = f"latex_type_{para.original_type}"
+            sig = f"latex_para_{para.index}"
             item.setData(0, Qt.UserRole, sig)
             item.setData(1, Qt.UserRole, para.index)
             # 存储原始类型
@@ -875,7 +877,7 @@ class SmartFormatPage(QWidget):
     def _refresh_latex_item_type(self, item):
         """刷新 LaTeX 段落项的类型显示"""
         sig = item.data(0, Qt.UserRole)
-        if not sig or not sig.startswith("latex_type_"):
+        if not sig or not sig.startswith("latex_para_"):
             return
 
         original_type = item.data(2, Qt.UserRole) or "body"
@@ -1131,12 +1133,12 @@ class SmartFormatPage(QWidget):
                 styles=styles
             )
         elif input_path.suffix.lower() in ['.docx', '.doc']:
-            # DOCX 文件：选择性格式化
+            # DOCX 文件：按当前识别结果整体应用样式
             output_file = os.path.join(output_dir, f"{input_path.stem}_formatted.docx")
-            paragraph_mappings = self._get_modified_paragraph_mappings()
+            paragraph_mappings = self._get_docx_paragraph_mappings()
             
             if not paragraph_mappings:
-                QMessageBox.information(self, "提示", "没有修改任何段落类型，无需转换")
+                QMessageBox.information(self, "提示", "当前文档没有可应用格式的段落")
                 return
             
             from ..formatter import SmartFormatter
@@ -1151,6 +1153,7 @@ class SmartFormatPage(QWidget):
         else:
             # Markdown 文件：全量转换为 DOCX
             output_file = os.path.join(output_dir, f"{input_path.stem}_formatted.docx")
+            type_overrides = self._get_markdown_type_overrides()
             
             from ..formatter import SmartFormatter
             formatter = SmartFormatter()
@@ -1159,6 +1162,7 @@ class SmartFormatPage(QWidget):
                 input_file,
                 output_file,
                 styles=styles,
+                type_overrides=type_overrides,
                 use_ai=False
             )
         
@@ -1169,22 +1173,17 @@ class SmartFormatPage(QWidget):
         self.convert_btn.setEnabled(False)
         self.worker.start()
 
-    def _get_modified_paragraph_mappings(self) -> dict:
-        """获取用户手动修改过类型的段落索引和类型映射
-        
-        Returns:
-            {段落索引: 类型} 的字典，只包含用户修改过的段落
-        """
+    def _get_docx_paragraph_mappings(self) -> dict:
+        """获取 DOCX 当前应应用到各段落的完整类型映射。"""
         paragraph_mappings = {}
         
-        # format_mappings: {格式签名: 类型}
-        # 只有用户手动改过类型的才在这里
-        for sig, type_id in self.format_mappings.items():
-            group = self.analyzer.format_groups.get(sig)
-            if group:
-                # 获取该格式组包含的所有段落索引
-                for para_idx in group.paragraph_indices:
-                    paragraph_mappings[para_idx] = type_id
+        for sig, group in self.analyzer.format_groups.items():
+            current_type = self.format_mappings.get(sig)
+            if not current_type:
+                current_type = group.original_type or group.suggested_type or "body"
+
+            for para_idx in group.paragraph_indices:
+                paragraph_mappings[para_idx] = current_type
         
         return paragraph_mappings
 
@@ -1197,15 +1196,22 @@ class SmartFormatPage(QWidget):
         paragraph_mappings = {}
         
         for sig, new_type in self.format_mappings.items():
-            if sig.startswith("latex_type_"):
-                # 从签名中提取原始类型
-                original_type = sig.replace("latex_type_", "")
-                # 找到所有该类型的段落
-                for para in self.latex_analyzer.paragraphs:
-                    if para.original_type == original_type:
-                        paragraph_mappings[para.index] = new_type
-        
+            if sig.startswith("latex_para_"):
+                para_index = int(sig.replace("latex_para_", ""))
+                paragraph_mappings[para_index] = new_type
+
         return paragraph_mappings
+
+    def _get_markdown_type_overrides(self) -> dict:
+        """获取 Markdown 识别类型到目标类型的映射。"""
+        type_overrides = {}
+
+        for sig, new_type in self.format_mappings.items():
+            if sig.startswith("md_type_"):
+                original_type = sig.replace("md_type_", "")
+                type_overrides[original_type] = new_type
+        
+        return type_overrides
 
     def _on_convert_finished(self, output_path):
         """转换完成"""
