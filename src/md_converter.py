@@ -1,34 +1,45 @@
 """Markdown 转 DOCX 转换模块"""
 
 import re
-import os
 import base64
 from pathlib import Path
 from io import BytesIO
 import markdown
 from bs4 import BeautifulSoup
 from docx import Document
-from docx.shared import Pt, Cm, Inches, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
-from docx.enum.style import WD_STYLE_TYPE
-from docx.oxml.ns import qn
+from docx.shared import Pt, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
-from PIL import Image
 import httpx
 
-from .config import DEFAULT_STYLES, get_font_size_pt, FONT_SIZE_MAP
+from .style_utils import (
+    apply_alignment,
+    apply_line_spacing,
+    apply_run_style,
+    apply_runs_style,
+    get_font_size_value,
+    get_style,
+    merge_styles,
+)
 
 
 class MarkdownConverter:
     """Markdown 转换器"""
     
-    def __init__(self, styles: dict = None):
-        self.styles = styles or DEFAULT_STYLES
+    def __init__(self, styles: dict = None, type_overrides: dict = None):
+        self.styles = merge_styles(styles)
+        self.type_overrides = dict(type_overrides or {})
         self.supported_extensions = ['.md', '.markdown']
         self.image_cache = {}
     
+    def configure(self, styles: dict = None, type_overrides: dict = None):
+        """更新转换器运行时配置。"""
+        self.styles = merge_styles(styles)
+        self.type_overrides = dict(type_overrides or {})
+    
     def convert_to_docx(self, input_path: str, output_path: str = None,
-                        progress_callback=None, styles: dict = None) -> str:
+                        progress_callback=None, styles: dict = None,
+                        type_overrides: dict = None) -> str:
         """将Markdown转换为DOCX
         
         Args:
@@ -52,8 +63,7 @@ class MarkdownConverter:
         else:
             output_path = Path(output_path)
         
-        if styles:
-            self.styles = {**DEFAULT_STYLES, **styles}
+        self.configure(styles=styles, type_overrides=type_overrides)
         
         # 读取Markdown内容
         with open(input_path, 'r', encoding='utf-8') as f:
@@ -80,7 +90,8 @@ class MarkdownConverter:
     
     def convert_from_string(self, md_content: str, output_path: str,
                             progress_callback=None, styles: dict = None,
-                            base_dir: str = None) -> str:
+                            base_dir: str = None,
+                            type_overrides: dict = None) -> str:
         """从字符串转换Markdown到DOCX
         
         Args:
@@ -93,8 +104,7 @@ class MarkdownConverter:
         Returns:
             输出文件路径
         """
-        if styles:
-            self.styles = {**DEFAULT_STYLES, **styles}
+        self.configure(styles=styles, type_overrides=type_overrides)
         
         self.base_dir = Path(base_dir) if base_dir else Path.cwd()
         
@@ -182,41 +192,21 @@ class MarkdownConverter:
     
     def _get_font_size(self, style_config):
         """获取字体大小（磅值）"""
-        size = style_config.get('font_size', 12)
-        if isinstance(size, str):
-            # 标准字号名称，如"小四"
-            return get_font_size_pt(size)
-        return size
+        return get_font_size_value(style_config)
     
     def _apply_line_spacing(self, paragraph_format, style_config):
         """应用行间距设置"""
-        spacing_type = style_config.get('line_spacing_type', '1.5倍行距')
-        spacing_value = style_config.get('line_spacing_value', 1.5)
-        
-        # 确保spacing_value是数值
-        if isinstance(spacing_value, str):
-            try:
-                spacing_value = float(spacing_value)
-            except:
-                spacing_value = 20 if spacing_type == '固定值' else 1.5
-        
-        if spacing_type == '固定值':
-            # 固定行距（磅值）
-            paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
-            paragraph_format.line_spacing = Pt(float(spacing_value))
-        else:
-            # 倍数行距
-            paragraph_format.line_spacing = float(spacing_value)
+        apply_line_spacing(paragraph_format, style_config)
     
     def _setup_styles(self, doc: Document):
         """设置文档样式"""
         styles = doc.styles
+        body_style = get_style(self.styles, 'body')
         
         # 设置正文样式
         try:
             normal_style = styles['Normal']
             normal_font = normal_style.font
-            body_style = self.styles.get('body', {})
             
             # 西文字体
             font_en = body_style.get('font_name_en', body_style.get('font_name', 'Times New Roman'))
@@ -228,8 +218,13 @@ class MarkdownConverter:
             
             # 中文字体
             font_cn = body_style.get('font_name_cn', body_style.get('font_name', '宋体'))
-            normal_style._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
-        except:
+            r_pr = normal_style._element.get_or_add_rPr()
+            r_fonts = r_pr.find("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts")
+            if r_fonts is None:
+                r_fonts = OxmlElement("w:rFonts")
+                r_pr.append(r_fonts)
+            r_fonts.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}eastAsia", font_cn)
+        except Exception:
             pass
         
         # 创建各级标题样式
@@ -255,9 +250,48 @@ class MarkdownConverter:
                     
                     # 中文字体
                     font_cn = heading_style.get('font_name_cn', heading_style.get('font_name', '宋体'))
-                    style._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
-                except:
+                    r_pr = style._element.get_or_add_rPr()
+                    r_fonts = r_pr.find("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts")
+                    if r_fonts is None:
+                        r_fonts = OxmlElement("w:rFonts")
+                        r_pr.append(r_fonts)
+                    r_fonts.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}eastAsia", font_cn)
+                except Exception:
                     pass
+
+    def _resolve_block_type(self, original_type: str) -> str:
+        """根据预览修改结果解析最终块类型。"""
+        return self.type_overrides.get(original_type, original_type)
+
+    def _add_text_block(self, doc, text: str, original_type: str, *, list_mode: bool = False):
+        """添加文本型块，并允许根据映射重定向样式。"""
+        text = text.strip()
+        if not text:
+            return
+
+        final_type = self._resolve_block_type(original_type)
+
+        if final_type == 'code':
+            self._add_code_block(doc, text)
+            return
+
+        if final_type == 'formula':
+            self._add_formula(doc, text)
+            return
+
+        paragraph = doc.add_paragraph(text)
+
+        if final_type.startswith('heading'):
+            level = int(final_type[-1]) if final_type[-1].isdigit() else 1
+            self._apply_heading_style(paragraph, level)
+        elif final_type == 'quote':
+            self._apply_quote_style(paragraph)
+        elif final_type == 'caption':
+            self._apply_caption_style(paragraph)
+        elif list_mode:
+            self._apply_list_style(paragraph)
+        else:
+            self._apply_body_style(paragraph)
     
     def _process_element(self, doc, element, code_blocks, inline_codes, 
                         formulas, inline_formulas):
@@ -281,10 +315,7 @@ class MarkdownConverter:
             text = self._restore_special_content(
                 text, code_blocks, inline_codes, formulas, inline_formulas
             )
-            # 使用普通段落而非add_heading，以便完全控制样式
-            heading = doc.add_paragraph()
-            run = heading.add_run(text)
-            self._apply_heading_style(heading, level)
+            self._add_text_block(doc, text, f'heading{min(level, 4)}')
             
         elif element.name == 'p':
             text = element.get_text()
@@ -294,14 +325,14 @@ class MarkdownConverter:
                 match = re.search(r'<<<CODE_BLOCK_(\d+)>>>', text)
                 if match:
                     idx = int(match.group(1))
-                    self._add_code_block(doc, code_blocks[idx])
+                    self._add_text_block(doc, code_blocks[idx], 'code')
                     return
             
             if '<<<FORMULA_BLOCK_' in text:
                 match = re.search(r'<<<FORMULA_BLOCK_(\d+)>>>', text)
                 if match:
                     idx = int(match.group(1))
-                    self._add_formula(doc, formulas[idx])
+                    self._add_text_block(doc, formulas[idx], 'formula')
                     return
             
             # 检查是否包含图片
@@ -313,9 +344,7 @@ class MarkdownConverter:
             text = self._restore_special_content(
                 text, code_blocks, inline_codes, formulas, inline_formulas
             )
-            if text.strip():
-                p = doc.add_paragraph(text)
-                self._apply_body_style(p)
+            self._add_text_block(doc, text, 'body')
                 
         elif element.name == 'ul':
             for li in element.find_all('li', recursive=False):
@@ -325,9 +354,7 @@ class MarkdownConverter:
                 text = self._restore_special_content(
                     text, code_blocks, inline_codes, formulas, inline_formulas
                 )
-                if text.strip():
-                    p = doc.add_paragraph(text, style='List Bullet')
-                    self._apply_list_style(p)
+                self._add_text_block(doc, text, 'body', list_mode=True)
                 
         elif element.name == 'ol':
             for li in element.find_all('li', recursive=False):
@@ -337,24 +364,21 @@ class MarkdownConverter:
                 text = self._restore_special_content(
                     text, code_blocks, inline_codes, formulas, inline_formulas
                 )
-                if text.strip():
-                    p = doc.add_paragraph(text, style='List Number')
-                    self._apply_list_style(p)
+                self._add_text_block(doc, text, 'body', list_mode=True)
                 
         elif element.name == 'blockquote':
             text = element.get_text()
             text = self._restore_special_content(
                 text, code_blocks, inline_codes, formulas, inline_formulas
             )
-            p = doc.add_paragraph(text)
-            self._apply_quote_style(p)
+            self._add_text_block(doc, text, 'quote')
             
         elif element.name == 'pre':
             code = element.find('code')
             if code:
-                self._add_code_block(doc, code.get_text())
+                self._add_text_block(doc, code.get_text(), 'code')
             else:
-                self._add_code_block(doc, element.get_text())
+                self._add_text_block(doc, element.get_text(), 'code')
                 
         elif element.name == 'table':
             self._add_table(doc, element)
@@ -398,7 +422,7 @@ class MarkdownConverter:
     
     def _apply_body_style(self, paragraph):
         """应用正文样式"""
-        style = self.styles.get('body', {})
+        style = get_style(self.styles, 'body')
         pf = paragraph.paragraph_format
         
         # 行距
@@ -415,29 +439,12 @@ class MarkdownConverter:
             pf.first_line_indent = Pt(font_size * indent)
         
         # 对齐方式
-        alignment = style.get('alignment', 'left')
-        if alignment == 'justify':
-            pf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        elif alignment == 'center':
-            pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        elif alignment == 'right':
-            pf.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        else:
-            pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        
-        # 字体设置
-        font_cn = style.get('font_name_cn', style.get('font_name', '宋体'))
-        font_en = style.get('font_name_en', style.get('font_name', 'Times New Roman'))
-        font_size = self._get_font_size(style)
-        
-        for run in paragraph.runs:
-            run.font.name = font_en
-            run.font.size = Pt(font_size)
-            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+        apply_alignment(pf, style.get('alignment', 'left'))
+        apply_runs_style(paragraph.runs, style)
 
     def _apply_list_style(self, paragraph):
         """应用列表样式（无首行缩进，无段前段后间距）"""
-        style = self.styles.get('body', {})
+        style = get_style(self.styles, 'body')
         pf = paragraph.paragraph_format
         
         # 行距
@@ -451,30 +458,13 @@ class MarkdownConverter:
         pf.first_line_indent = Pt(0)
         
         # 对齐方式
-        alignment = style.get('alignment', 'left')
-        if alignment == 'justify':
-            pf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        elif alignment == 'center':
-            pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        elif alignment == 'right':
-            pf.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        else:
-            pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        
-        # 字体设置
-        font_cn = style.get('font_name_cn', style.get('font_name', '宋体'))
-        font_en = style.get('font_name_en', style.get('font_name', 'Times New Roman'))
-        font_size = self._get_font_size(style)
-        
-        for run in paragraph.runs:
-            run.font.name = font_en
-            run.font.size = Pt(font_size)
-            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+        apply_alignment(pf, style.get('alignment', 'left'))
+        apply_runs_style(paragraph.runs, style)
     
     def _apply_heading_style(self, heading, level):
         """应用标题样式"""
         style_key = f'heading{min(level, 4)}'
-        style = self.styles.get(style_key, {})
+        style = get_style(self.styles, style_key)
         
         pf = heading.paragraph_format
         pf.space_before = Pt(style.get('space_before', 12))
@@ -482,51 +472,34 @@ class MarkdownConverter:
         self._apply_line_spacing(pf, style)
         
         # 对齐方式
-        alignment = style.get('alignment', 'left')
-        if alignment == 'center':
-            pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        else:
-            pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        
-        font_cn = style.get('font_name_cn', style.get('font_name', '宋体'))
-        font_en = style.get('font_name_en', style.get('font_name', 'Times New Roman'))
-        font_size = self._get_font_size(style)
-        
-        for run in heading.runs:
-            run.font.name = font_en
-            run.font.size = Pt(font_size)
-            run.font.bold = style.get('bold', True)
-            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+        apply_alignment(pf, style.get('alignment', 'left'))
+        apply_runs_style(heading.runs, style, bold=style.get('bold', True))
     
     def _apply_quote_style(self, paragraph):
         """应用引用样式"""
-        style = self.styles.get('quote', {})
+        style = get_style(self.styles, 'quote')
         pf = paragraph.paragraph_format
         
         pf.left_indent = Cm(style.get('left_indent', 1))
         pf.space_before = Pt(style.get('space_before', 6))
         pf.space_after = Pt(style.get('space_after', 6))
-        pf.line_spacing = style.get('line_spacing', 1.5)
-        
-        font_size = self._get_font_size(style) if style.get('font_size') else 11
-        font_name = style.get('font_name_cn', style.get('font_name', '楷体'))
-        
-        for run in paragraph.runs:
-            run.font.name = style.get('font_name_en', font_name)
-            run.font.size = Pt(font_size)
-            run.font.italic = style.get('italic', True)
-            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
-            
-            color = style.get('color', '#666666')
-            if color.startswith('#'):
-                r = int(color[1:3], 16)
-                g = int(color[3:5], 16)
-                b = int(color[5:7], 16)
-                run.font.color.rgb = RGBColor(r, g, b)
+        self._apply_line_spacing(pf, style)
+        apply_alignment(pf, style.get('alignment', 'left'))
+        apply_runs_style(paragraph.runs, style, italic=style.get('italic', True))
+
+    def _apply_caption_style(self, paragraph):
+        """应用图表标题样式。"""
+        style = get_style(self.styles, 'caption')
+        pf = paragraph.paragraph_format
+        pf.space_before = Pt(style.get('space_before', 6))
+        pf.space_after = Pt(style.get('space_after', 6))
+        self._apply_line_spacing(pf, style)
+        apply_alignment(pf, style.get('alignment', 'center'))
+        apply_runs_style(paragraph.runs, style, bold=style.get('bold', False))
     
     def _add_code_block(self, doc, code_text):
         """添加代码块"""
-        style = self.styles.get('code', {})
+        style = get_style(self.styles, 'code')
         
         # 清理代码文本
         if code_text.startswith('```'):
@@ -542,14 +515,18 @@ class MarkdownConverter:
         for line in code_text.split('\n'):
             p = doc.add_paragraph()
             run = p.add_run(line)
-            run.font.name = font_name
-            run.font.size = Pt(font_size)
-            run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Consolas')
+            apply_run_style(
+                run,
+                style,
+                default_cn='Consolas',
+                default_en=font_name,
+                default_size=font_size,
+            )
             
             pf = p.paragraph_format
             pf.space_before = Pt(0)
             pf.space_after = Pt(0)
-            pf.line_spacing = style.get('line_spacing', 1.2)
+            self._apply_line_spacing(pf, style)
             
             # 添加背景色（通过底纹）
             self._add_shading(p, style.get('background', '#f5f5f5'))
@@ -565,7 +542,7 @@ class MarkdownConverter:
     
     def _add_formula(self, doc, formula_text):
         """添加公式"""
-        style = self.styles.get('formula', {})
+        style = get_style(self.styles, 'formula')
         
         # 清理公式文本
         formula_text = formula_text.strip()
@@ -581,9 +558,10 @@ class MarkdownConverter:
         run.font.size = Pt(12)
         
         pf = p.paragraph_format
-        pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        apply_alignment(pf, style.get('alignment', 'center'))
         pf.space_before = Pt(style.get('space_before', 6))
         pf.space_after = Pt(style.get('space_after', 6))
+        self._apply_line_spacing(pf, style)
     
     def _add_image(self, doc, src, alt=''):
         """添加图片"""
@@ -626,19 +604,7 @@ class MarkdownConverter:
             # 添加图片说明（使用caption样式）
             if alt:
                 caption_p = doc.add_paragraph(alt)
-                caption_style = self.styles.get('caption', {})
-                
-                caption_p.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                self._apply_line_spacing(caption_p.paragraph_format, caption_style)
-                
-                font_cn = caption_style.get('font_name_cn', '黑体')
-                font_en = caption_style.get('font_name_en', 'Times New Roman')
-                font_size = self._get_font_size(caption_style) if caption_style.get('font_size') else 9
-                
-                for run in caption_p.runs:
-                    run.font.name = font_en
-                    run.font.size = Pt(font_size)
-                    run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+                self._apply_caption_style(caption_p)
                     
         except Exception as e:
             # 图片加载失败，显示占位符
@@ -671,7 +637,7 @@ class MarkdownConverter:
     
     def _add_table(self, doc, table_element):
         """添加表格"""
-        style = self.styles.get('table', {})
+        style = get_style(self.styles, 'table')
         
         rows = table_element.find_all('tr')
         if not rows:
@@ -702,10 +668,11 @@ class MarkdownConverter:
                     
                     for p in table_cell.paragraphs:
                         for run in p.runs:
-                            run.font.name = table_font_en
-                            run.font.size = Pt(table_font_size)
-                            run._element.rPr.rFonts.set(qn('w:eastAsia'), table_font_cn)
-                            
-                            # 表头加粗
-                            if cell.name == 'th' and style.get('header_bold', True):
-                                run.font.bold = True
+                            apply_run_style(
+                                run,
+                                style,
+                                default_cn=table_font_cn,
+                                default_en=table_font_en,
+                                default_size=table_font_size,
+                                bold=cell.name == 'th' and style.get('header_bold', True),
+                            )

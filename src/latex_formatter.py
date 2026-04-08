@@ -2,15 +2,21 @@
 
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from docx import Document
-from docx.shared import Pt, Cm, Inches
+from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.style import WD_STYLE_TYPE
-from docx.oxml.ns import qn
 
 from .latex_analyzer import LatexAnalyzer, LatexParagraphInfo
-from .config import DEFAULT_STYLES, FONT_SIZE_MAP
+from .config import FONT_SIZE_MAP
+from .style_utils import (
+    apply_alignment,
+    apply_line_spacing,
+    apply_run_style,
+    get_font_size_value,
+    get_style,
+    merge_styles,
+)
 
 
 class LatexToDocxConverter:
@@ -18,7 +24,7 @@ class LatexToDocxConverter:
     
     def __init__(self, analyzer: LatexAnalyzer, styles: Dict[str, Any] = None):
         self.analyzer = analyzer
-        self.styles = styles or {}
+        self.styles = merge_styles(styles)
         self.doc = Document()
         # 标题编号计数器：[一级, 二级, 三级, 四级, 五级]
         self.heading_counters = [0, 0, 0, 0, 0]
@@ -78,17 +84,10 @@ class LatexToDocxConverter:
             numbered_text = self._get_heading_number(level) + text
             text = numbered_text
         
-        # 获取对应类型的样式
-        if element_type.startswith('heading'):
-            style = self.styles.get(element_type, self.styles.get('body', {}))
-        else:
-            style = self.styles.get('body', {})
+        style = get_style(self.styles, element_type)
         
-        # 字体设置
         font_cn = style.get('font_name_cn') or style.get('font_cn', '宋体')
-        font_en = style.get('font_name_en') or style.get('font_en', 'Times New Roman')
-        font_size = style.get('font_size', '小四')
-        size_pt = self._get_font_size_pt(font_size)
+        size_pt = get_font_size_value(style)
         is_bold = style.get('bold', False)
         
         # 处理行内公式 $...$：分割文本，交替处理普通文本和公式
@@ -105,40 +104,25 @@ class LatexToDocxConverter:
                 formula_text = self._unescape_latex(formula_text)
                 run = p.add_run(formula_text)
                 run.font.name = 'Cambria Math'
-                run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
                 run.font.italic = True
                 run.font.size = Pt(size_pt)
             else:
                 # 普通文本 - 处理转义字符
                 clean_text = self._unescape_latex(part)
                 run = p.add_run(clean_text)
-                run.font.name = font_en
-                run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
-                run.font.bold = is_bold
-                run.font.size = Pt(size_pt)
+                apply_run_style(run, style, bold=is_bold, default_cn=font_cn, default_size=size_pt)
         
-        # 首行缩进（正文类型才有）
-        if not element_type.startswith('heading'):
+        if element_type == 'body':
             indent = style.get('first_line_indent', 2)
             if indent:
                 p.paragraph_format.first_line_indent = Cm(indent * 0.35)
+        elif element_type == 'quote':
+            p.paragraph_format.left_indent = Cm(style.get('left_indent', 1))
         
-        # 行距
-        line_type = style.get('line_spacing_type', '倍数行距')
-        line_value = style.get('line_spacing_value', 1.5)
-        if line_type == '固定值':
-            p.paragraph_format.line_spacing = Pt(line_value)
-        else:
-            p.paragraph_format.line_spacing = line_value
-        
-        # 对齐方式
-        align = style.get('alignment', 'left')
-        if align == 'center':
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        elif align == 'right':
-            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        elif align == 'justify':
-            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.space_before = Pt(style.get('space_before', 0))
+        p.paragraph_format.space_after = Pt(style.get('space_after', 0))
+        apply_line_spacing(p.paragraph_format, style)
+        apply_alignment(p.paragraph_format, style.get('alignment', 'left'))
     
     def _get_font_size_pt(self, size_name) -> float:
         """将字号名称转换为磅值"""
@@ -206,34 +190,20 @@ class LatexToDocxConverter:
         return f"({num})"
     
     def _add_caption(self, text: str):
-        """添加图表/代码标题，使用 caption 样式，上下各有一个空行"""
-        # 获取 caption 样式
-        style = self.styles.get('caption', {})
-        font_cn = style.get('font_name_cn') or style.get('font_cn', '宋体')
-        font_en = style.get('font_name_en') or style.get('font_en', 'Times New Roman')
-        font_size = style.get('font_size', '小五')
-        size_pt = self._get_font_size_pt(font_size)
-        
-        # 上方空行
-        p_before = self.doc.add_paragraph()
-        run_before = p_before.add_run()
-        run_before.font.size = Pt(size_pt)
-        
-        # 标题行
+        """添加图表/代码标题，直接复用 caption 样式配置。"""
+        style = get_style(self.styles, 'caption')
         p = self.doc.add_paragraph()
         run = p.add_run(text)
-        run.font.name = font_en
-        run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
-        run.font.size = Pt(size_pt)
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        
-        # 下方空行
-        p_after = self.doc.add_paragraph()
-        run_after = p_after.add_run()
-        run_after.font.size = Pt(size_pt)
+        apply_run_style(run, style)
+        p.paragraph_format.space_before = Pt(style.get('space_before', 6))
+        p.paragraph_format.space_after = Pt(style.get('space_after', 6))
+        apply_line_spacing(p.paragraph_format, style)
+        apply_alignment(p.paragraph_format, style.get('alignment', 'center'))
     
     def _add_table(self, raw_text: str):
         """解析 LaTeX 表格并创建 DOCX 表格"""
+        table_style = get_style(self.styles, 'table')
+
         # 提取 caption（稍后在表格下方添加）
         caption_match = re.search(r'\\caption\{([^}]*)\}', raw_text)
         caption_text = None
@@ -279,10 +249,16 @@ class LatexToDocxConverter:
                     cell.text = cell_text
                     # 设置单元格字体
                     for paragraph in cell.paragraphs:
+                        apply_alignment(paragraph.paragraph_format, table_style.get('alignment', 'center'))
                         for run in paragraph.runs:
-                            run.font.name = 'Times New Roman'
-                            run._element.rPr.rFonts.set(qn('w:eastAsia'), '宋体')
-                            run.font.size = Pt(10.5)
+                            apply_run_style(
+                                run,
+                                table_style,
+                                bold=i == 0 and table_style.get('header_bold', True),
+                                default_cn='宋体',
+                                default_en='Times New Roman',
+                                default_size=10.5,
+                            )
         
         # 在表格下方添加 caption（类似 "表1 xxx" 格式），使用 caption 样式
         if caption_text:
@@ -325,22 +301,27 @@ class LatexToDocxConverter:
             caption_text = self._unescape_latex(caption_match.group(1).strip())
         
         # 获取代码样式
-        code_style = self.styles.get('code', {})
-        code_font = code_style.get('font_name', 'Consolas')
-        code_size = self._get_font_size_pt(code_style.get('font_size', '小五'))
+        code_style = get_style(self.styles, 'code')
+        code_font = code_style.get('font_name_en', code_style.get('font_name', 'Consolas'))
+        code_size = get_font_size_value(code_style, 9)
         
         # 按行添加代码，保持缩进
         for line in code_content.split('\n'):
             if line.strip() or line:  # 保留空行
                 p = self.doc.add_paragraph()
                 run = p.add_run(line.rstrip())
-                # 使用等宽字体
-                run.font.name = code_font
-                run._element.rPr.rFonts.set(qn('w:eastAsia'), '等线')
-                run.font.size = Pt(code_size)
-                # 不缩进
+                apply_run_style(
+                    run,
+                    code_style,
+                    default_cn='等线',
+                    default_en=code_font,
+                    default_size=code_size,
+                )
                 p.paragraph_format.first_line_indent = Pt(0)
                 p.paragraph_format.left_indent = Cm(0.5)
+                p.paragraph_format.space_before = Pt(code_style.get('space_before', 0))
+                p.paragraph_format.space_after = Pt(code_style.get('space_after', 0))
+                apply_line_spacing(p.paragraph_format, code_style)
         
         # 在代码块下方添加 caption（类似 "代码1 xxx" 格式），使用 caption 样式
         if caption_text:
@@ -365,7 +346,11 @@ class LatexToDocxConverter:
         
         # 创建段落
         p = self.doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        formula_style = get_style(self.styles, 'formula')
+        p.paragraph_format.space_before = Pt(formula_style.get('space_before', 6))
+        p.paragraph_format.space_after = Pt(formula_style.get('space_after', 6))
+        apply_line_spacing(p.paragraph_format, formula_style)
+        apply_alignment(p.paragraph_format, formula_style.get('alignment', 'center'))
         
         # 创建 OMML 公式对象
         self._insert_omml_formula(p, formula_content)

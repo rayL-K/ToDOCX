@@ -1,12 +1,17 @@
 """智能排版与格式优化模块"""
 
-import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 from .docx_to_md import DocxToMarkdown
 from .md_converter import MarkdownConverter
-from .config import DEFAULT_STYLES
+from .style_utils import (
+    apply_alignment,
+    apply_line_spacing,
+    apply_runs_style,
+    get_font_size_value,
+    merge_styles,
+)
 
 
 class SmartFormatter:
@@ -18,6 +23,7 @@ class SmartFormatter:
     
     def format_document(self, input_path: str, output_path: str,
                        styles: Dict[str, Any] = None,
+                       type_overrides: Dict[str, str] = None,
                        use_ai: bool = True,
                        progress_callback=None) -> str:
         """智能格式化文档
@@ -72,17 +78,8 @@ class SmartFormatter:
         if progress_callback:
             progress_callback(65, "生成Word文档...")
         
-        # 合并样式
-        final_styles = {**DEFAULT_STYLES}
-        if styles:
-            for key, value in styles.items():
-                if key in final_styles:
-                    final_styles[key] = {**final_styles[key], **value}
-                else:
-                    final_styles[key] = value
-        
-        self.md_converter.styles = final_styles
-        
+        final_styles = merge_styles(styles)
+
         def inner_progress(p, msg):
             if progress_callback:
                 # 将内部进度映射到65-95%
@@ -93,7 +90,9 @@ class SmartFormatter:
             md_content, 
             str(output_path),
             progress_callback=inner_progress,
-            base_dir=str(base_dir)
+            base_dir=str(base_dir),
+            styles=final_styles,
+            type_overrides=type_overrides,
         )
         
         if progress_callback:
@@ -119,10 +118,7 @@ class SmartFormatter:
             输出文件路径
         """
         from docx import Document
-        from docx.shared import Pt, Cm
-        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
-        from docx.oxml.ns import qn
-        from .config import get_font_size_pt
+        from docx.shared import Pt
         
         if progress_callback:
             progress_callback(10, "读取文档...")
@@ -130,14 +126,7 @@ class SmartFormatter:
         # 打开原始文档
         doc = Document(input_path)
         
-        # 合并样式配置
-        final_styles = {**DEFAULT_STYLES}
-        if styles:
-            for key, value in styles.items():
-                if key in final_styles:
-                    final_styles[key] = {**final_styles[key], **value}
-                else:
-                    final_styles[key] = value
+        final_styles = merge_styles(styles)
         
         if progress_callback:
             progress_callback(30, "应用格式修改...")
@@ -169,11 +158,7 @@ class SmartFormatter:
 
     def _apply_style_to_paragraph(self, para, style: dict, type_id: str, doc=None):
         """将样式应用到单个段落"""
-        from docx.shared import Pt, Cm
-        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
-        from docx.oxml.ns import qn
-        from docx.oxml import OxmlElement
-        from .config import get_font_size_pt
+        from docx.shared import Pt
         
         pf = para.paragraph_format
         
@@ -190,52 +175,21 @@ class SmartFormatter:
             pf.space_before = Pt(0)
             pf.space_after = Pt(0)
         
-        # 行距
-        spacing_type = style.get('line_spacing_type', '1.5倍行距')
-        spacing_value = style.get('line_spacing_value', 1.5)
-        if isinstance(spacing_value, str):
-            try:
-                spacing_value = float(spacing_value)
-            except:
-                spacing_value = 1.5
-        
-        if spacing_type == '固定值':
-            pf.line_spacing_rule = WD_LINE_SPACING.EXACTLY
-            pf.line_spacing = Pt(float(spacing_value))
-        else:
-            pf.line_spacing = float(spacing_value)
-        
-        # 对齐方式
-        alignment = style.get('alignment', 'left')
-        align_map = {
-            'left': WD_ALIGN_PARAGRAPH.LEFT,
-            'center': WD_ALIGN_PARAGRAPH.CENTER,
-            'right': WD_ALIGN_PARAGRAPH.RIGHT,
-            'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
-        }
-        pf.alignment = align_map.get(alignment, WD_ALIGN_PARAGRAPH.LEFT)
+        apply_line_spacing(pf, style)
+        apply_alignment(pf, style.get("alignment", "left"))
         
         # 首行缩进（正文）
         if type_id == 'body' and 'first_line_indent' in style:
             indent_chars = style['first_line_indent']
-            font_size = style.get('font_size', 12)
-            if isinstance(font_size, str):
-                font_size = get_font_size_pt(font_size)
+            font_size = get_font_size_value(style)
             pf.first_line_indent = Pt(font_size * indent_chars)
         
-        # 字体设置
         font_cn = style.get('font_name_cn', style.get('font_name', '宋体'))
         font_en = style.get('font_name_en', style.get('font_name', 'Times New Roman'))
-        font_size = style.get('font_size', 12)
-        if isinstance(font_size, str):
-            font_size = get_font_size_pt(font_size)
+        font_size = get_font_size_value(style)
         bold = style.get('bold', False)
         
-        for run in para.runs:
-            run.font.name = font_en
-            run.font.size = Pt(font_size)
-            run.font.bold = bold
-            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_cn)
+        apply_runs_style(para.runs, style, bold=bold)
         
         # 如果是编号段落，还需要修改编号的字体
         if is_numbered:
