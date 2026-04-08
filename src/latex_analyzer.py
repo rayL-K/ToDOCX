@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
+from .diagnostics import get_logger, log_exception
+from .errors import AnalysisError
+
 
 @dataclass
 class LatexParagraphInfo:
@@ -100,6 +103,7 @@ class LatexAnalyzer:
         self.file_path: Optional[Path] = None
         self.raw_content: str = ""
         self.lines: List[str] = []
+        self.logger = get_logger("latex_analyzer")
     
     def load_document(self, file_path: str) -> bool:
         """加载 LaTeX 文档"""
@@ -111,9 +115,18 @@ class LatexAnalyzer:
             self._analyze_structure()
             self._group_by_type()
             return True
-        except Exception as e:
-            print(f"加载LaTeX文档失败: {e}")
-            return False
+        except Exception as error:
+            log_exception(
+                self.logger,
+                "LaTeX 文档分析失败",
+                error,
+                file_path=file_path,
+            )
+            raise AnalysisError(
+                "无法读取 LaTeX 文件。",
+                code="TODX402",
+                hint="请确认文件编码为 UTF-8，且内容没有被其他程序改坏。",
+            ) from error
     
     def _analyze_structure(self):
         """分析 LaTeX 文档结构"""

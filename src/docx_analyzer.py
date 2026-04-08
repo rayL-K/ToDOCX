@@ -9,6 +9,8 @@ from docx.shared import Pt, Twips
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from .config import FONT_SIZE_MAP
+from .diagnostics import get_logger, log_exception
+from .errors import AnalysisError
 
 
 @dataclass
@@ -54,6 +56,7 @@ class DocxAnalyzer:
         self.format_groups: Dict[str, FormatGroup] = {}
         self.document = None
         self.file_path = None
+        self.logger = get_logger("docx_analyzer")
     
     def load_document(self, file_path: str) -> bool:
         """加载文档
@@ -70,9 +73,18 @@ class DocxAnalyzer:
             self._analyze_paragraphs()
             self._group_by_format()
             return True
-        except Exception as e:
-            print(f"加载文档失败: {e}")
-            return False
+        except Exception as error:
+            log_exception(
+                self.logger,
+                "DOCX 文档分析失败",
+                error,
+                file_path=file_path,
+            )
+            raise AnalysisError(
+                "无法读取 DOCX 文件。",
+                code="TODX401",
+                hint="请确认文件未损坏，且没有被其他程序独占。",
+            ) from error
     
     def _analyze_paragraphs(self):
         """分析所有段落"""
@@ -137,7 +149,7 @@ class DocxAnalyzer:
             if is_heading:
                 try:
                     heading_level = int(style_name.replace("Heading ", "").replace("标题 ", ""))
-                except:
+                except ValueError:
                     heading_level = 1
             
             # 将磅值转换为字号名称

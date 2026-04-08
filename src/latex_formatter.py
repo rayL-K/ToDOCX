@@ -492,8 +492,7 @@ def convert_latex_to_docx(input_file: str, output_file: str,
     """
     # 加载分析器
     analyzer = LatexAnalyzer()
-    if not analyzer.load_document(input_file):
-        raise ValueError(f"无法加载 LaTeX 文件: {input_file}")
+    analyzer.load_document(input_file)
     
     # 转换
     converter = LatexToDocxConverter(analyzer, styles)
@@ -729,8 +728,7 @@ def format_latex_file(input_path: str, output_path: str,
         输出文件路径
     """
     analyzer = LatexAnalyzer()
-    if not analyzer.load_document(input_path):
-        raise ValueError(f"无法加载 LaTeX 文件: {input_path}")
+    analyzer.load_document(input_path)
     
     formatter = LatexFormatter(analyzer)
     content = formatter.apply_format(paragraph_mappings, styles, progress_callback)

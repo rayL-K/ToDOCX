@@ -4,10 +4,6 @@ ToDOCX - 智能排版工具
 """
 
 import sys
-import os
-
-# 添加项目路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt

@@ -1,6 +1,6 @@
 """主窗口"""
 
-import os
+from pathlib import Path
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -24,9 +24,8 @@ class MainWindow(QMainWindow):
         self.resize(1200, 800)
         
         # 设置窗口图标
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        icon_path = os.path.join(base_dir, "ui", "docx.ico")
-        self.setWindowIcon(QIcon(icon_path))
+        icon_path = Path(__file__).resolve().with_name("docx.ico")
+        self.setWindowIcon(QIcon(str(icon_path)))
         
         # 应用样式
         self.setStyleSheet(MAIN_STYLE)

@@ -1,6 +1,5 @@
 """智能排版页面 - 交互式预览版"""
 
-import os
 from pathlib import Path
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -8,10 +7,10 @@ from PyQt5.QtWidgets import (
     QDoubleSpinBox, QCheckBox, QLineEdit, QTabWidget, QScrollArea,
     QFrame, QSizePolicy, QMessageBox, QSplitter, QListWidget,
     QListWidgetItem, QInputDialog, QRadioButton, QButtonGroup,
-    QMenu, QAction, QTreeWidget, QTreeWidgetItem, QHeaderView
+    QMenu, QAction, QTreeWidget, QTreeWidgetItem
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QEvent
-from PyQt5.QtGui import QFont, QCursor
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QCursor
 
 
 class NoWheelComboBox(QComboBox):
@@ -20,14 +19,16 @@ class NoWheelComboBox(QComboBox):
         # 忽略滚轮事件，防止误操作
         event.ignore()
 
-from .components import FileDropZone, ProgressWidget, SectionHeader, StyledButton
-from ..config import (
-    DEFAULT_STYLES, FONT_SIZE_MAP,
-    FONT_SIZE_OPTIONS, get_font_size_pt
-)
+from .components import FileDropZone, ProgressWidget
+from ..config import FONT_SIZE_OPTIONS
+from ..conversion_request import build_conversion_request
+from ..diagnostics import get_log_path, get_logger, log_event, log_exception
 from ..template_manager import TemplateManager
 from ..docx_analyzer import DocxAnalyzer
+from ..errors import OperationCancelledError, ToDOCXError, user_message_for_error
 from ..latex_analyzer import LatexAnalyzer
+from ..resource_policy import ResourcePolicy
+from ..user_settings import UserSettingsStore
 
 
 # UI样式
@@ -71,7 +72,8 @@ class ConvertWorker(QThread):
 
     progress = pyqtSignal(int, str)
     finished = pyqtSignal(str)
-    error = pyqtSignal(str)
+    error = pyqtSignal(object)
+    cancelled = pyqtSignal(str)
 
     def __init__(self, converter_func, *args, **kwargs):
         super().__init__()
@@ -82,13 +84,30 @@ class ConvertWorker(QThread):
     def run(self):
         try:
             def progress_callback(value, message):
+                if self.isInterruptionRequested():
+                    raise OperationCancelledError(
+                        "转换已取消。",
+                        code="TODX901",
+                    )
                 self.progress.emit(value, message)
 
             self.kwargs['progress_callback'] = progress_callback
             result = self.converter_func(*self.args, **self.kwargs)
+            if self.isInterruptionRequested():
+                raise OperationCancelledError(
+                    "转换已取消。",
+                    code="TODX901",
+                )
             self.finished.emit(result)
-        except Exception as e:
-            self.error.emit(str(e))
+        except OperationCancelledError as error:
+            self.cancelled.emit(error.user_message)
+        except Exception as error:
+            self.error.emit(error)
+
+    def cancel(self):
+        """请求取消当前任务。"""
+
+        self.requestInterruption()
 
 
 class SmartFormatPage(QWidget):
@@ -100,6 +119,9 @@ class SmartFormatPage(QWidget):
         self.analyzer = DocxAnalyzer()
         self.latex_analyzer = None  # LaTeX 分析器
         self.template_manager = TemplateManager()
+        self.settings_store = UserSettingsStore()
+        self.user_settings = self.settings_store.load()
+        self.logger = get_logger("smart_format_page")
         self.format_mappings = {}
         self.current_file_type = None  # 'docx', 'latex', 'markdown'
 
@@ -162,6 +184,8 @@ class SmartFormatPage(QWidget):
         
         self.output_path = QLineEdit()
         self.output_path.setPlaceholderText("默认与源文件同目录")
+        if self.user_settings.last_output_dir:
+            self.output_path.setText(self.user_settings.last_output_dir)
         self.browse_btn = QPushButton("...")
         self.browse_btn.setMaximumWidth(30)
         self.browse_btn.clicked.connect(self._browse_output)
@@ -181,12 +205,17 @@ class SmartFormatPage(QWidget):
         self.clear_btn = QPushButton("清除")
         self.clear_btn.clicked.connect(self._clear)
 
+        self.cancel_btn = QPushButton("取消")
+        self.cancel_btn.setEnabled(False)
+        self.cancel_btn.clicked.connect(self._cancel_convert)
+
         self.convert_btn = QPushButton("开始转换")
         self.convert_btn.setStyleSheet("background-color: #3498db; color: white; font-weight: bold;")
         self.convert_btn.clicked.connect(self._start_convert)
 
         btn_layout.addWidget(self.clear_btn)
         btn_layout.addStretch()
+        btn_layout.addWidget(self.cancel_btn)
         btn_layout.addWidget(self.convert_btn)
 
         layout.addLayout(btn_layout)
@@ -621,8 +650,11 @@ class SmartFormatPage(QWidget):
 
         user_templates = self.template_manager.list_templates()
         for tpl in user_templates:
-            item = QListWidgetItem(f"[用户] {tpl['name']}")
-            item.setData(Qt.UserRole, ("user", tpl['name']))
+            status = tpl.get("status", "ok")
+            prefix = "[用户]" if status == "ok" else "[损坏]"
+            item = QListWidgetItem(f"{prefix} {tpl['name']}")
+            item.setData(Qt.UserRole, ("user", tpl["name"], status))
+            item.setToolTip(tpl.get("description", ""))
             self.template_list.addItem(item)
 
     def _load_template(self):
@@ -632,11 +664,20 @@ class SmartFormatPage(QWidget):
             QMessageBox.warning(self, "提示", "请先选择模板")
             return
 
-        tpl_type, tpl_name = current.data(Qt.UserRole)
+        tpl_data = current.data(Qt.UserRole)
+        tpl_type, tpl_name = tpl_data[0], tpl_data[1]
+        tpl_status = tpl_data[2] if len(tpl_data) > 2 else "ok"
         if tpl_type == "builtin":
             styles = self.template_manager.get_builtin_templates().get(tpl_name, {})
         else:
-            styles = self.template_manager.load_template(tpl_name)
+            if tpl_status != "ok":
+                QMessageBox.warning(self, "提示", "该模板文件已损坏，请删除后重新保存。")
+                return
+            try:
+                styles = self.template_manager.load_template(tpl_name)
+            except Exception as error:
+                self._show_error("加载模板失败", error)
+                return
 
         if styles:
             self._apply_styles_to_ui(styles)
@@ -647,7 +688,11 @@ class SmartFormatPage(QWidget):
         name, ok = QInputDialog.getText(self, "保存模板", "模板名称:")
         if ok and name:
             styles = self._get_current_styles()
-            self.template_manager.save_template(name, styles)
+            try:
+                self.template_manager.save_template(name, styles)
+            except Exception as error:
+                self._show_error("保存模板失败", error)
+                return
             self._refresh_template_list()
 
     def _rename_template(self):
@@ -656,30 +701,39 @@ class SmartFormatPage(QWidget):
         if not current:
             QMessageBox.warning(self, "提示", "请先选择模板")
             return
-        tpl_type, tpl_name = current.data(Qt.UserRole)
+        tpl_data = current.data(Qt.UserRole)
+        tpl_type, tpl_name = tpl_data[0], tpl_data[1]
         if tpl_type == "builtin":
             QMessageBox.warning(self, "提示", "内置模板不能重命名")
             return
         new_name, ok = QInputDialog.getText(self, "重命名模板", "新名称:", text=tpl_name)
         if ok and new_name and new_name != tpl_name:
-            if self.template_manager.rename_template(tpl_name, new_name):
+            try:
+                renamed = self.template_manager.rename_template(tpl_name, new_name)
+            except Exception as error:
+                self._show_error("重命名模板失败", error)
+                return
+            if renamed:
                 self._refresh_template_list()
                 QMessageBox.information(self, "成功", f"已重命名为: {new_name}")
-            else:
-                QMessageBox.warning(self, "失败", "重命名失败")
 
     def _delete_template(self):
         """删除模板"""
         current = self.template_list.currentItem()
         if not current:
             return
-        tpl_type, tpl_name = current.data(Qt.UserRole)
+        tpl_data = current.data(Qt.UserRole)
+        tpl_type, tpl_name = tpl_data[0], tpl_data[1]
         if tpl_type == "builtin":
             QMessageBox.warning(self, "提示", "内置模板不能删除")
             return
         reply = QMessageBox.question(self, "确认", f"删除 '{tpl_name}'?")
         if reply == QMessageBox.Yes:
-            self.template_manager.delete_template(tpl_name)
+            try:
+                self.template_manager.delete_template(tpl_name)
+            except Exception as error:
+                self._show_error("删除模板失败", error)
+                return
             self._refresh_template_list()
 
     def _apply_styles_to_ui(self, styles):
@@ -832,20 +886,24 @@ class SmartFormatPage(QWidget):
 
         if file_path.lower().endswith('.docx'):
             self.current_file_type = 'docx'
-            if self.analyzer.load_document(file_path):
+            try:
+                self.analyzer.load_document(file_path)
                 self._populate_paragraph_tree()
                 groups = self.analyzer.get_format_summary()
                 self.format_info_label.setText(f"共 {len(self.analyzer.paragraphs)} 段，{len(groups)} 种格式")
-            else:
+            except Exception as error:
                 self.format_info_label.setText("无法加载文档")
+                self._show_error("读取文档失败", error)
         elif file_path.lower().endswith('.tex'):
             self.current_file_type = 'latex'
             self.latex_analyzer = LatexAnalyzer()
-            if self.latex_analyzer.load_document(file_path):
+            try:
+                self.latex_analyzer.load_document(file_path)
                 self._populate_latex_tree()
                 self.format_info_label.setText(f"LaTeX文档：共 {len(self.latex_analyzer.paragraphs)} 段")
-            else:
+            except Exception as error:
                 self.format_info_label.setText("无法加载LaTeX文档")
+                self._show_error("读取文档失败", error)
         else:
             self.current_file_type = 'markdown'
             try:
@@ -854,8 +912,9 @@ class SmartFormatPage(QWidget):
                 self.md_paragraphs = self._parse_markdown(content)
                 self._populate_markdown_tree()
                 self.format_info_label.setText(f"Markdown文件：共 {len(self.md_paragraphs)} 段")
-            except Exception as e:
-                self.format_info_label.setText(f"读取失败: {e}")
+            except Exception as error:
+                self.format_info_label.setText("无法读取 Markdown 文件")
+                self._show_error("读取文档失败", error)
 
     def _populate_latex_tree(self):
         """填充 LaTeX 段落树"""
@@ -1093,6 +1152,7 @@ class SmartFormatPage(QWidget):
         dir_path = QFileDialog.getExistingDirectory(self, "选择输出目录", self.output_path.text())
         if dir_path:
             self.output_path.setText(dir_path)
+            self._remember_output_dir(dir_path)
 
     def _clear(self):
         """清除"""
@@ -1101,6 +1161,7 @@ class SmartFormatPage(QWidget):
         self.format_info_label.setText("选择DOCX文件后显示内容")
         self.progress_widget.reset()
         self.format_mappings = {}
+        self.current_file_type = None
 
     def _start_convert(self):
         """开始转换"""
@@ -1109,69 +1170,139 @@ class SmartFormatPage(QWidget):
             QMessageBox.warning(self, "提示", "请先选择文件")
             return
 
-        input_path = Path(input_file)
-        # 输出目录：优先使用用户指定，否则使用源文件所在目录
-        output_dir = self.output_path.text().strip()
-        if not output_dir:
-            output_dir = str(input_path.parent)
-        os.makedirs(output_dir, exist_ok=True)
-
         styles = self._get_current_styles()
+        explicit_output_dir = self.output_path.text().strip()
+        request_kwargs = {
+            "input_file": input_file,
+            "output_dir_text": explicit_output_dir,
+            "styles": styles,
+            "resource_policy": ResourcePolicy(),
+        }
 
-        # 根据文件类型选择不同的处理方式
-        if input_path.suffix.lower() == '.tex':
-            # LaTeX 文件：输出 .docx
-            output_file = os.path.join(output_dir, f"{input_path.stem}_formatted.docx")
-            paragraph_mappings = self._get_latex_paragraph_mappings()
-            
-            from ..latex_formatter import convert_latex_to_docx
-            self.worker = ConvertWorker(
-                convert_latex_to_docx,
-                input_file,
-                output_file,
-                paragraph_mappings=paragraph_mappings,
-                styles=styles
-            )
-        elif input_path.suffix.lower() in ['.docx', '.doc']:
-            # DOCX 文件：按当前识别结果整体应用样式
-            output_file = os.path.join(output_dir, f"{input_path.stem}_formatted.docx")
+        input_suffix = Path(input_file).suffix.lower()
+        if input_suffix == ".tex":
+            request_kwargs["paragraph_mappings"] = self._get_latex_paragraph_mappings()
+        elif input_suffix in [".docx", ".doc"]:
             paragraph_mappings = self._get_docx_paragraph_mappings()
-            
             if not paragraph_mappings:
                 QMessageBox.information(self, "提示", "当前文档没有可应用格式的段落")
                 return
-            
+            request_kwargs["paragraph_mappings"] = paragraph_mappings
+        else:
+            request_kwargs["type_overrides"] = self._get_markdown_type_overrides()
+
+        try:
+            request = build_conversion_request(**request_kwargs)
+        except Exception as error:
+            self._show_error("无法开始转换", error)
+            return
+
+        if explicit_output_dir:
+            self._remember_output_dir(str(request.output_dir))
+
+        # 根据文件类型选择不同的处理方式
+        if request.input_type == "latex":
+            from ..latex_formatter import convert_latex_to_docx
+
+            self.worker = ConvertWorker(
+                convert_latex_to_docx,
+                str(request.input_path),
+                str(request.output_path),
+                paragraph_mappings=request.paragraph_mappings,
+                styles=request.styles,
+            )
+        elif request.input_type == "docx":
             from ..formatter import SmartFormatter
+
             formatter = SmartFormatter()
             self.worker = ConvertWorker(
                 formatter.apply_selective_format,
-                input_file,
-                output_file,
-                paragraph_mappings=paragraph_mappings,
-                styles=styles
+                str(request.input_path),
+                str(request.output_path),
+                paragraph_mappings=request.paragraph_mappings,
+                styles=request.styles,
             )
         else:
-            # Markdown 文件：全量转换为 DOCX
-            output_file = os.path.join(output_dir, f"{input_path.stem}_formatted.docx")
-            type_overrides = self._get_markdown_type_overrides()
-            
             from ..formatter import SmartFormatter
+
             formatter = SmartFormatter()
             self.worker = ConvertWorker(
                 formatter.format_document,
-                input_file,
-                output_file,
-                styles=styles,
-                type_overrides=type_overrides,
-                use_ai=False
+                str(request.input_path),
+                str(request.output_path),
+                styles=request.styles,
+                type_overrides=request.type_overrides,
+                resource_policy=request.resource_policy,
+                use_ai=False,
             )
         
         self.worker.progress.connect(self.progress_widget.set_progress)
         self.worker.finished.connect(self._on_convert_finished)
         self.worker.error.connect(self._on_convert_error)
+        self.worker.cancelled.connect(self._on_convert_cancelled)
 
-        self.convert_btn.setEnabled(False)
+        self.progress_widget.reset()
+        self._set_worker_state(True)
+        log_event(
+            self.logger,
+            "用户发起转换",
+            input=str(request.input_path),
+            output=str(request.output_path),
+            input_type=request.input_type,
+        )
         self.worker.start()
+
+    def _set_worker_state(self, is_running: bool) -> None:
+        """统一切换转换中的 UI 状态。"""
+
+        self.convert_btn.setEnabled(not is_running)
+        self.cancel_btn.setEnabled(is_running)
+        self.clear_btn.setEnabled(not is_running)
+        self.browse_btn.setEnabled(not is_running)
+
+    def _remember_output_dir(self, output_dir: str) -> None:
+        """持久化最近使用的输出目录。"""
+
+        try:
+            self.user_settings = self.settings_store.update_last_output_dir(output_dir)
+        except Exception as error:
+            log_exception(
+                self.logger,
+                "记录最近输出目录失败",
+                error,
+                output_dir=output_dir,
+            )
+
+    def _show_error(self, title: str, error: Exception) -> None:
+        """展示用户可读错误，并记录开发者日志。"""
+
+        if isinstance(error, ToDOCXError):
+            log_event(
+                self.logger,
+                title,
+                code=error.code,
+                message=error.user_message,
+            )
+            message = user_message_for_error(error)
+        else:
+            log_exception(
+                self.logger,
+                title,
+                error,
+                log_path=str(get_log_path()),
+            )
+            message = (
+                f"{user_message_for_error(error)}\n\n"
+                f"日志文件：{get_log_path()}"
+            )
+        QMessageBox.critical(self, title, message)
+
+    def _cancel_convert(self):
+        """请求取消当前转换。"""
+
+        if self.worker and self.worker.isRunning():
+            self.worker.cancel()
+            self.progress_widget.set_error("正在取消，请稍候...")
 
     def _get_docx_paragraph_mappings(self) -> dict:
         """获取 DOCX 当前应应用到各段落的完整类型映射。"""
@@ -1215,12 +1346,33 @@ class SmartFormatPage(QWidget):
 
     def _on_convert_finished(self, output_path):
         """转换完成"""
-        self.convert_btn.setEnabled(True)
+        self._set_worker_state(False)
         self.progress_widget.set_success("完成")
+        log_event(self.logger, "转换完成", output=output_path)
+        self.worker = None
         QMessageBox.information(self, "完成", f"已保存到:\n{output_path}")
 
-    def _on_convert_error(self, error_msg):
+    def _on_convert_error(self, error):
         """转换出错"""
-        self.convert_btn.setEnabled(True)
-        self.progress_widget.set_error(f"失败: {error_msg}")
-        QMessageBox.critical(self, "错误", f"转换失败:\n{error_msg}")
+        self._set_worker_state(False)
+        message = user_message_for_error(error)
+        if not isinstance(error, ToDOCXError):
+            log_exception(
+                self.logger,
+                "转换失败",
+                error,
+                log_path=str(get_log_path()),
+            )
+            message = f"{message}\n\n日志文件：{get_log_path()}"
+        self.progress_widget.set_error("转换失败")
+        self.worker = None
+        QMessageBox.critical(self, "错误", f"转换失败：\n{message}")
+
+    def _on_convert_cancelled(self, message: str):
+        """转换取消。"""
+
+        self._set_worker_state(False)
+        self.progress_widget.set_error(message)
+        log_event(self.logger, "转换已取消")
+        self.worker = None
+        QMessageBox.information(self, "已取消", message)

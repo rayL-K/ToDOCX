@@ -151,6 +151,7 @@ class ProgressWidget(QWidget):
     def set_progress(self, value: int, message: str = None):
         """设置进度"""
         self.progress_bar.setValue(value)
+        self.status_label.setStyleSheet("")
         if message:
             self.status_label.setText(message)
     
@@ -158,6 +159,7 @@ class ProgressWidget(QWidget):
         """重置进度"""
         self.progress_bar.setValue(0)
         self.status_label.setText("准备就绪")
+        self.status_label.setStyleSheet("")
     
     def set_success(self, message: str = "完成"):
         """设置成功状态"""
