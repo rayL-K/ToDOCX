@@ -1,9 +1,39 @@
-"""配置文件"""
+"""应用内置默认配置。"""
 
-import os
+from dataclasses import dataclass
 
-# 默认输出路径
-DEFAULT_OUTPUT_PATH = r"C:\Users\Administrator\Desktop\something\Toword\output_test"
+APP_NAME = "ToDOCX"
+APP_DIR_NAME = APP_NAME
+SETTINGS_SCHEMA_VERSION = 1
+TEMPLATE_SCHEMA_VERSION = 1
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
+SUPPORTED_INPUT_EXTENSIONS = (".docx", ".doc", ".md", ".markdown", ".tex")
+SUPPORTED_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp")
+SUPPORTED_EMBEDDED_IMAGE_MIME_TYPES = (
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/bmp",
+    "image/webp",
+)
+
+
+@dataclass(frozen=True)
+class BuiltinDefaults:
+    """代码内置默认值。"""
+
+    app_name: str = APP_NAME
+    app_dir_name: str = APP_DIR_NAME
+    settings_schema_version: int = SETTINGS_SCHEMA_VERSION
+    template_schema_version: int = TEMPLATE_SCHEMA_VERSION
+    max_image_bytes: int = MAX_IMAGE_BYTES
+    supported_input_extensions: tuple[str, ...] = SUPPORTED_INPUT_EXTENSIONS
+    supported_image_extensions: tuple[str, ...] = SUPPORTED_IMAGE_EXTENSIONS
+    supported_embedded_image_mime_types: tuple[str, ...] = SUPPORTED_EMBEDDED_IMAGE_MIME_TYPES
+
+
+BUILTIN_DEFAULTS = BuiltinDefaults()
 
 # 标准字号映射（字号名称 -> 磅值）
 FONT_SIZE_MAP = {
@@ -165,20 +195,3 @@ DEFAULT_STYLES = {
 def get_font_size_pt(size_name: str) -> float:
     """获取字号对应的磅值"""
     return FONT_SIZE_MAP.get(size_name, 12)
-
-# AI 排版提示词
-AI_FORMATTING_PROMPT = """你是一个专业的文档排版助手。请帮我优化以下Markdown文档的排版和格式。
-
-要求：
-1. 保持内容完整性，不要删除任何实质内容
-2. 优化标题层级结构，确保层级合理（一级标题、二级标题等）
-3. 规范段落格式，确保段落之间有适当的分隔
-4. 保持代码块的完整性和正确的语言标识
-5. 保持公式的完整性（LaTeX格式）
-6. 保持图片链接的完整性
-7. 优化列表格式（有序/无序列表）
-8. 修复可能存在的Markdown语法错误
-9. 确保表格格式正确
-
-请直接返回优化后的Markdown内容，不要添加任何解释或说明。
-"""
