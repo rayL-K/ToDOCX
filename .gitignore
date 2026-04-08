@@ -216,6 +216,7 @@ htmlcov/
 # 项目特定临时输出目录
 output_test/
 /.omm/
+/.playwright-cli/
 
 # LaTeX / 临时文档（如果使用）
 *.aux

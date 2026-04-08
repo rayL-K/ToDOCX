@@ -15,7 +15,7 @@ class FileDropZone(QFrame):
     
     def __init__(self, accept_extensions: list = None, parent=None):
         super().__init__(parent)
-        self.accept_extensions = accept_extensions or ['.pdf', '.docx', '.md']
+        self.accept_extensions = accept_extensions or ['.docx', '.md', '.markdown', '.tex']
         self.selected_file = None
         
         self.setObjectName("fileDropZone")
