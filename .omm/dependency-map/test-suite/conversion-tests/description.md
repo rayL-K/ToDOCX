@@ -1,0 +1,1 @@
+Regression tests for style merging, markdown type overrides, and LaTeX paragraph remapping. They protect recent fixes in the conversion path.

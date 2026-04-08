@@ -1,0 +1,1 @@
+Last step where the in-memory python-docx Document is serialized to a .docx file in the selected output directory.

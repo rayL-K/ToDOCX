@@ -1,0 +1,1 @@
+Direct export path for LaTeX files. It relies on LatexAnalyzer output plus user remapping data and writes DOCX structures without passing through markdown.

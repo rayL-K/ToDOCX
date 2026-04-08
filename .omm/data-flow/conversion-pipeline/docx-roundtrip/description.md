@@ -1,0 +1,1 @@
+Reformatting path for existing DOCX files. It converts DOCX content to markdown first, then reuses the markdown renderer so style application stays centralized.

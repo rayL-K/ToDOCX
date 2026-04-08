@@ -1,0 +1,1 @@
+Inline markdown parsing logic inside smart_format_page.py. It provides a lightweight preview model for markdown inputs without introducing a separate analyzer module.

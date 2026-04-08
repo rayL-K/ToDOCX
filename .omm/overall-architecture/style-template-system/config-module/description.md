@@ -1,0 +1,1 @@
+Defines built-in formatting defaults, font size maps, and line spacing presets used by both the UI editor and conversion modules.

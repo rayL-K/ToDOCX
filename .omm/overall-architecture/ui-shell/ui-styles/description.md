@@ -1,0 +1,1 @@
+Shared visual styling for the desktop shell. It centralizes stylesheet strings and helps main_window.py and smart_format_page.py present a consistent look.

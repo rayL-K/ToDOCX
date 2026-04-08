@@ -1,0 +1,1 @@
+Shared helper module that applies alignment, line spacing, run formatting, and deep style merges, reducing duplicated style logic in converters.

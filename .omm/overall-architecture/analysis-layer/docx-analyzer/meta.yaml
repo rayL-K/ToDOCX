@@ -1,0 +1,9 @@
+created: 2026-04-08T08:35:26.838Z
+updated: 2026-04-08T08:35:26.838Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: docx-analyzer
+children: []
+parentPath:
+  - analysis-layer

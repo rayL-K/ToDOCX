@@ -1,0 +1,1 @@
+User-selected input file handled by the desktop UI. Supported runtime formats are existing DOCX, markdown text files, and LaTeX source files.

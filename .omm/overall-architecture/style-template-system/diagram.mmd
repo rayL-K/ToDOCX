@@ -1,0 +1,5 @@
+graph LR
+    config-module["Config Module\nsrc/config.py"]
+    config-module -->|"provides built-in style defaults and font maps"| style-utils["Style Utils\nsrc/style_utils.py"]
+    template-manager["Template Manager\nsrc/template_manager.py"]
+    template-manager -->|"persists user templates around default style keys"| config-module

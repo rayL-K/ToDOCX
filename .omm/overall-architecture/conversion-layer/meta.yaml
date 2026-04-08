@@ -1,0 +1,12 @@
+created: 2026-04-08T08:36:36.881Z
+updated: 2026-04-08T08:37:05.110Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: conversion-layer
+children:
+  - docx-markdown-adapter
+  - latex-converter
+  - markdown-converter
+  - smart-formatter
+parentPath: []

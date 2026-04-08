@@ -1,0 +1,12 @@
+created: 2026-04-08T08:34:58.599Z
+updated: 2026-04-08T08:35:15.718Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: analysis-layer
+children:
+  - docx-analyzer
+  - latex-analyzer
+  - markdown-preview
+  - preview-model
+parentPath: []

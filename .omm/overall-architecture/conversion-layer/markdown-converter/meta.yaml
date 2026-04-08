@@ -1,0 +1,9 @@
+created: 2026-04-08T08:37:51.023Z
+updated: 2026-04-08T08:37:51.025Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: markdown-converter
+children: []
+parentPath:
+  - conversion-layer

@@ -1,0 +1,1 @@
+Recent fixes already made markdown type overrides and full-document DOCX remapping flow through the conversion layer correctly, which reduced one class of UI-to-export mismatch.

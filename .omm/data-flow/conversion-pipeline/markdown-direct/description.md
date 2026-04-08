@@ -1,0 +1,1 @@
+Direct export path for markdown files. It bypasses DOCX analysis and forwards markdown plus resolved styles into the shared markdown renderer.

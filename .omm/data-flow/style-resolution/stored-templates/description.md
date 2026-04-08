@@ -1,0 +1,1 @@
+User-managed template JSON files. They let the UI restore a named style set and feed that data back into the runtime style merge path.

@@ -1,0 +1,1 @@
+Preview stage for markdown files. It uses inline parsing inside smart_format_page.py to infer headings, body text, code blocks, quotes, images, and formulas.

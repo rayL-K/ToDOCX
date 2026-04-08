@@ -1,0 +1,1 @@
+Image sources consumed during markdown rendering. The renderer accepts local file paths, base64-encoded data URLs, and remote URLs fetched with httpx.

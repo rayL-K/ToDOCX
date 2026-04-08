@@ -1,0 +1,1 @@
+DOCX reformatting still uses a markdown round-trip, while markdown and LaTeX use direct renderers. That means fidelity and performance characteristics vary by input type.

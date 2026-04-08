@@ -1,0 +1,1 @@
+The runtime is tied to Python 3.10+ and PyQt5, while document generation relies on python-docx and format-specific helper libraries already declared in pyproject.toml.

@@ -1,0 +1,1 @@
+Shared configuration and persistence layer for formatting rules. It defines built-in defaults, merges runtime overrides, and stores user template JSON files.

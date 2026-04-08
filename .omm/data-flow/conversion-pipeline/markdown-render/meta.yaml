@@ -1,0 +1,9 @@
+created: 2026-04-08T08:46:01.387Z
+updated: 2026-04-08T08:46:01.388Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: markdown-render
+children: []
+parentPath:
+  - conversion-pipeline

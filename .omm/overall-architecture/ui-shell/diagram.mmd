@@ -1,0 +1,6 @@
+graph LR
+    main-window["Main Window\nsrc/ui/main_window.py"]
+    main-window -->|"hosts the primary formatting workspace"| smart-format-page["Smart Format Page\nsrc/ui/smart_format_page.py"]
+    smart-format-page -->|"reuses shared widgets for file drop, progress, and layout"| ui-components["UI Components\nsrc/ui/components.py"]
+    main-window -->|"applies the top-level visual theme"| ui-styles["UI Styles\nsrc/ui/styles.py"]
+    smart-format-page -->|"uses theme constants and widget styling"| ui-styles

@@ -1,0 +1,1 @@
+Analyzer for existing Word files. It depends on python-docx and config font maps to summarize paragraph formatting and derive grouped signatures.

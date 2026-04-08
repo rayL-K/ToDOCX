@@ -1,0 +1,1 @@
+In-memory preview state owned by SmartFormatPage, including paragraph tree items, original type guesses, and user-edited mapping overrides used to drive conversion.

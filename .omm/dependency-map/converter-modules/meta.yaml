@@ -1,0 +1,13 @@
+created: 2026-04-08T08:51:42.915Z
+updated: 2026-04-08T08:51:58.372Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: converter-modules
+children:
+  - docx-markdown-adapter
+  - latex-analyzer
+  - latex-converter
+  - markdown-converter
+  - smart-formatter
+parentPath: []

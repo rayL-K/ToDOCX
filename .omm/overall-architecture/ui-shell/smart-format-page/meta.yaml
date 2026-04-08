@@ -1,0 +1,9 @@
+created: 2026-04-08T08:34:13.931Z
+updated: 2026-04-08T08:34:13.932Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: smart-format-page
+children: []
+parentPath:
+  - ui-shell

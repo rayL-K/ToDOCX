@@ -1,0 +1,1 @@
+Transforms markdown text into a python-docx Document. It parses markdown into HTML, rebuilds document structure, applies styles, and handles images, tables, code blocks, and formula placeholders.

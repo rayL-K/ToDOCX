@@ -1,0 +1,1 @@
+Converts analyzed LaTeX content into DOCX paragraphs, tables, code blocks, and formulas. It also supports user-driven paragraph type remapping before writing the final document.

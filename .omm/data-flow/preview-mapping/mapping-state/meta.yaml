@@ -1,0 +1,9 @@
+created: 2026-04-08T08:43:29.972Z
+updated: 2026-04-08T08:43:29.973Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: mapping-state
+children: []
+parentPath:
+  - preview-mapping

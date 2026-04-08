@@ -1,0 +1,7 @@
+graph LR
+    docx-preview["DOCX Preview\nsrc/docx_analyzer.py"]
+    docx-preview -->|"fills grouped format signatures"| mapping-state["Mapping State\nsrc/ui/smart_format_page.py"]
+    latex-preview["LaTeX Preview\nsrc/latex_analyzer.py"]
+    latex-preview -->|"fills paragraph type records"| mapping-state
+    markdown-preview["Markdown Preview\nsrc/ui/smart_format_page.py"]
+    markdown-preview -->|"fills lightweight markdown block tags"| mapping-state

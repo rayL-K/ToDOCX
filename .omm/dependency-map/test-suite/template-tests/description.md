@@ -1,0 +1,1 @@
+Regression tests for template persistence behavior, especially rename semantics and invalid template-name rejection.

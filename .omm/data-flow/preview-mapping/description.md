@@ -1,0 +1,1 @@
+Transient preview pipeline inside SmartFormatPage. It analyzes the source, shows editable paragraph/type assignments, and stores user overrides before export starts.

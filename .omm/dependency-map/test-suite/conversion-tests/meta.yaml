@@ -1,0 +1,9 @@
+created: 2026-04-08T08:58:19.645Z
+updated: 2026-04-08T08:58:19.646Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: conversion-tests
+children: []
+parentPath:
+  - test-suite

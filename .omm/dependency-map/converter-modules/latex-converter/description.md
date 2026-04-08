@@ -1,0 +1,1 @@
+Renderer and helper functions for LaTeX export. It depends on LatexAnalyzer, python-docx, lxml-backed OMML generation, and shared style helpers.

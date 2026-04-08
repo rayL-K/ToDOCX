@@ -1,0 +1,1 @@
+Single-process PyQt desktop application that lets users preview source structure, adjust paragraph types and styles, and export a formatted DOCX file.

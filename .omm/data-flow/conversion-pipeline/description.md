@@ -1,0 +1,1 @@
+Execution path that turns preview state plus resolved styles into a final python-docx Document and saves it to the chosen output path.

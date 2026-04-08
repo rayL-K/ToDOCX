@@ -1,0 +1,1 @@
+Shared configuration and helper modules that normalize style dictionaries and feed default values into the UI, converters, and template storage.

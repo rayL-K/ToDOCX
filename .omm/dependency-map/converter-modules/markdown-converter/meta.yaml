@@ -1,0 +1,9 @@
+created: 2026-04-08T08:52:56.619Z
+updated: 2026-04-08T08:52:56.620Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: markdown-converter
+children: []
+parentPath:
+  - converter-modules

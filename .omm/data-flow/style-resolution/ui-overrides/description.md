@@ -1,0 +1,1 @@
+Current values captured from the SmartFormatPage controls, including fonts, font sizes, alignment, indentation, spacing mode, and other export-facing style options.

@@ -1,0 +1,6 @@
+graph LR
+    smart-formatter["Smart Formatter\nsrc/formatter.py"]
+    smart-formatter -->|"round-trips existing DOCX input through markdown"| docx-markdown-adapter["DOCX Markdown Adapter\nsrc/docx_to_md.py"]
+    smart-formatter -->|"renders markdown content into DOCX"| markdown-converter["Markdown Converter\nsrc/md_converter.py"]
+    docx-markdown-adapter -->|"supplies markdown source for DOCX reformatting"| markdown-converter
+    smart-formatter -->|"shares style resolution with the alternate LaTeX path"| latex-converter["LaTeX Converter\nsrc/latex_formatter.py"]

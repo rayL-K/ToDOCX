@@ -1,0 +1,1 @@
+Static dependency view of the desktop application, showing how entry modules, UI code, analyzers, converters, template storage, shared style helpers, and tests depend on each other.

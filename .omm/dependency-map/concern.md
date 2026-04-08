@@ -1,0 +1,1 @@
+smart_format_page.py still imports analyzers, template persistence, and conversion entry points directly, which makes the UI layer the main architectural coupling hotspot.

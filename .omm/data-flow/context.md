@@ -1,0 +1,1 @@
+The same UI must support three source formats, so data flow splits early during preview generation and then converges again into a shared DOCX-writing goal.

@@ -1,0 +1,12 @@
+created: 2026-04-08T08:30:40.454Z
+updated: 2026-04-08T08:32:56.703Z
+update_count: 7
+last_field: note
+git_commit: e9ed15d
+git_branch: refactor/optimize-conversion-stability
+children:
+  - analysis-layer
+  - conversion-layer
+  - launcher
+  - style-template-system
+  - ui-shell

@@ -1,0 +1,1 @@
+Top-level QMainWindow wrapper that applies the global stylesheet, sets the icon and header, and embeds SmartFormatPage as the main workspace.

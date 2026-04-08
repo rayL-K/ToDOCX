@@ -1,0 +1,1 @@
+Modules that build exportable document output. They depend on python-docx, markdown parsing, LaTeX parsing helpers, and the shared style core.

@@ -1,0 +1,1 @@
+PyQt modules under src/ui/. They own the highest fan-in within the runtime because they coordinate preview analyzers, template persistence, style editing, and conversion dispatch.

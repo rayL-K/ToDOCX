@@ -1,0 +1,12 @@
+created: 2026-04-08T08:50:04.709Z
+updated: 2026-04-08T08:50:21.401Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: ui-modules
+children:
+  - main-window
+  - smart-format-page
+  - ui-components
+  - ui-styles
+parentPath: []

@@ -1,0 +1,1 @@
+Shared merge and application helpers that normalize style dictionaries and apply them consistently to paragraphs, runs, alignment, and line spacing.

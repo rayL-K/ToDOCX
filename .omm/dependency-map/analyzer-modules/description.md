@@ -1,0 +1,1 @@
+Preview analyzers used by the UI layer to classify DOCX and LaTeX input before the user starts conversion. They depend mainly on parsing libraries and config data.

@@ -1,0 +1,1 @@
+Reusable widget helpers with lower-level PyQt dependencies only. They reduce repetition in the main page module but do not know about analyzers or converters.

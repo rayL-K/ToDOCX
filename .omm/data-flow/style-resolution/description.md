@@ -1,0 +1,1 @@
+Style resolution path that combines built-in defaults, saved templates, and current UI values into the final style payload used during export.

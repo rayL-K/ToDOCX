@@ -1,0 +1,1 @@
+Preview stage for existing Word files. It inspects paragraph formatting and groups similar paragraphs so the user can change types once and apply them broadly.

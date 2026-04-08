@@ -1,0 +1,1 @@
+This perspective is useful because the project still centers behavior in a small set of large files, so import direction and shared dependency pressure matter for future refactors.

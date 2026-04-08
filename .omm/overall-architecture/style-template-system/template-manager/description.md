@@ -1,0 +1,1 @@
+Reads, writes, lists, renames, and deletes user template JSON files. It also exposes the built-in default template used by the UI template tab.

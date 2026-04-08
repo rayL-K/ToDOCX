@@ -1,0 +1,9 @@
+created: 2026-04-08T08:44:20.320Z
+updated: 2026-04-08T08:44:20.321Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: stored-templates
+children: []
+parentPath:
+  - style-resolution

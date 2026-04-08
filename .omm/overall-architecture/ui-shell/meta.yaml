@@ -1,0 +1,12 @@
+created: 2026-04-08T08:33:33.909Z
+updated: 2026-04-08T08:33:46.295Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: ui-shell
+children:
+  - main-window
+  - smart-format-page
+  - ui-components
+  - ui-styles
+parentPath: []

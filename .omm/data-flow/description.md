@@ -1,0 +1,1 @@
+Operational data path from user-selected source files through preview classification, style resolution, format-specific conversion, and final DOCX persistence.

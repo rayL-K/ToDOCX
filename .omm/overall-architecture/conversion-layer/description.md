@@ -1,0 +1,1 @@
+Document conversion modules that build the final DOCX output. They cover markdown rendering, LaTeX rendering, DOCX-to-markdown adaptation, and shared format orchestration.

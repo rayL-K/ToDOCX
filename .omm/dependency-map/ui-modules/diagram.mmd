@@ -1,0 +1,5 @@
+graph LR
+    main-window["Main Window\nsrc/ui/main_window.py"]
+    main-window -->|"creates the main workspace"| smart-format-page["Smart Format Page\nsrc/ui/smart_format_page.py"]
+    smart-format-page -->|"uses reusable widgets"| ui-components["UI Components\nsrc/ui/components.py"]
+    main-window -->|"imports shared stylesheet constants"| ui-styles["UI Styles\nsrc/ui/styles.py"]

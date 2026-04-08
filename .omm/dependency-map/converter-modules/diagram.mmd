@@ -1,0 +1,6 @@
+graph LR
+    smart-formatter["Smart Formatter\nsrc/formatter.py"]
+    smart-formatter -->|"imports DOCX-to-markdown adaptation"| docx-markdown-adapter["DOCX Markdown Adapter\nsrc/docx_to_md.py"]
+    smart-formatter -->|"imports the markdown renderer"| markdown-converter["Markdown Converter\nsrc/md_converter.py"]
+    latex-converter["LaTeX Converter\nsrc/latex_formatter.py"]
+    latex-converter -->|"imports the LaTeX analyzer"| latex-analyzer["LaTeX Analyzer\nsrc/latex_analyzer.py"]

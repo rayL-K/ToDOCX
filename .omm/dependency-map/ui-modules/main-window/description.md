@@ -1,0 +1,1 @@
+Thin desktop shell module that imports SmartFormatPage and UI style constants, then arranges them into the top-level window.

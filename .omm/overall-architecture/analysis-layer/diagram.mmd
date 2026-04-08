@@ -1,0 +1,7 @@
+graph LR
+    docx-analyzer["DOCX Analyzer\nsrc/docx_analyzer.py"]
+    docx-analyzer -->|"groups paragraph signatures"| preview-model["Preview Model\nsrc/ui/smart_format_page.py"]
+    latex-analyzer["LaTeX Analyzer\nsrc/latex_analyzer.py"]
+    latex-analyzer -->|"indexes headings, blocks, and environments"| preview-model
+    markdown-preview["Markdown Preview Parser\nsrc/ui/smart_format_page.py"]
+    markdown-preview -->|"tags lightweight markdown blocks"| preview-model

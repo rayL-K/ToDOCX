@@ -1,0 +1,1 @@
+Parsing dependency pulled in by the LaTeX converter to create paragraph records, environment blocks, and user-remappable type metadata before rendering.

@@ -1,0 +1,1 @@
+PyQt presentation layer under src/ui/. It owns the main window, the interactive formatting page, progress reporting, file selection, and user-triggered conversion commands.

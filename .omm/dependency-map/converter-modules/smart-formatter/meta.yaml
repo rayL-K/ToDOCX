@@ -1,0 +1,9 @@
+created: 2026-04-08T08:52:17.742Z
+updated: 2026-04-08T08:52:17.743Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: smart-formatter
+children: []
+parentPath:
+  - converter-modules

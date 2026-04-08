@@ -1,0 +1,1 @@
+High-level formatter entry point. It chooses the conversion path for DOCX or Markdown input, merges styles, forwards progress callbacks, and delegates detailed rendering to lower-level modules.

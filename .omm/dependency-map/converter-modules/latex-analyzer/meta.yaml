@@ -1,0 +1,9 @@
+created: 2026-04-08T08:53:33.046Z
+updated: 2026-04-08T08:53:33.047Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: latex-analyzer
+children: []
+parentPath:
+  - converter-modules

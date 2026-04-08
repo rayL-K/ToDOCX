@@ -1,0 +1,9 @@
+created: 2026-04-08T08:44:05.830Z
+updated: 2026-04-08T08:44:05.831Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: default-styles
+children: []
+parentPath:
+  - style-resolution

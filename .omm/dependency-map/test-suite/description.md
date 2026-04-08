@@ -1,0 +1,1 @@
+Small unittest suite under tests/ that exercises the most important new shared style behavior, conversion mapping fixes, and template persistence guarantees.

@@ -1,0 +1,1 @@
+Converts an existing DOCX file into markdown using mammoth HTML extraction plus custom HTML-to-markdown translation so the formatter can reuse the markdown export path.

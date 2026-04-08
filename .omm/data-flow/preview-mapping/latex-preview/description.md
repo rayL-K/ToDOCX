@@ -1,0 +1,1 @@
+Preview stage for LaTeX files. It recognizes headings, environments, and paragraph blocks so the UI can expose per-paragraph remapping before DOCX export.

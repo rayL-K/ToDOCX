@@ -1,0 +1,9 @@
+created: 2026-04-08T08:53:21.075Z
+updated: 2026-04-08T08:53:21.076Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: latex-converter
+children: []
+parentPath:
+  - converter-modules

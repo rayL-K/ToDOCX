@@ -1,0 +1,1 @@
+Move preview-mapping state and path-selection rules into a narrower service boundary so format routing stops depending on SmartFormatPage internals.

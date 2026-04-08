@@ -1,0 +1,7 @@
+graph LR
+    launcher["Launcher\nmain.py"]
+    launcher -->|"boots the desktop shell"| ui-shell["UI Shell\nsrc/ui/"]
+    ui-shell -->|"reads templates and style defaults"| style-template-system["Style & Template System\nsrc/config.py + src/template_manager.py + src/style_utils.py"]
+    ui-shell -->|"builds preview models for source files"| analysis-layer["Analysis Layer\nsrc/docx_analyzer.py + src/latex_analyzer.py"]
+    ui-shell -->|"dispatches background conversions"| conversion-layer["Conversion Layer\nsrc/formatter.py + src/md_converter.py + src/latex_formatter.py + src/docx_to_md.py"]
+    conversion-layer -->|"applies resolved styles and template data"| style-template-system

@@ -1,0 +1,1 @@
+Preview classification and conversion path selection are still partly owned by the UI module, so incorrect mapping state or future branching changes can break the handoff between preview and export.

@@ -1,0 +1,13 @@
+created: 2026-04-08T08:45:13.624Z
+updated: 2026-04-08T08:45:24.958Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: conversion-pipeline
+children:
+  - docx-roundtrip
+  - final-save
+  - latex-direct
+  - markdown-direct
+  - markdown-render
+parentPath: []

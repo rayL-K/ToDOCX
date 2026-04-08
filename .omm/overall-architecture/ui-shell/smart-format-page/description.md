@@ -1,0 +1,1 @@
+Largest interactive screen in the application. It loads source files, builds editable previews, manages style controls, starts worker threads, and routes each file type into the matching conversion path.

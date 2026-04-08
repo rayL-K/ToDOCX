@@ -1,0 +1,1 @@
+Desktop architecture for the ToDOCX PyQt application, covering how the launcher, UI, analyzers, converters, and style subsystems collaborate.

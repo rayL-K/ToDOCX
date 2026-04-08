@@ -1,0 +1,1 @@
+Shared markdown-to-DOCX renderer. It reconstructs headings, body paragraphs, lists, tables, code blocks, formulas, and images inside a python-docx document.

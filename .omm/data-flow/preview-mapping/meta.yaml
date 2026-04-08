@@ -1,0 +1,12 @@
+created: 2026-04-08T08:41:52.489Z
+updated: 2026-04-08T08:42:07.493Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: preview-mapping
+children:
+  - docx-preview
+  - latex-preview
+  - mapping-state
+  - markdown-preview
+parentPath: []

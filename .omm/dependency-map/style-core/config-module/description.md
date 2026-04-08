@@ -1,0 +1,1 @@
+Static config module that provides default style dictionaries, font size maps, and spacing presets consumed across the application.

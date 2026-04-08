@@ -1,0 +1,1 @@
+The single process entry point in main.py. It imports MainWindow from the UI package and does not depend on analyzers or converters directly.

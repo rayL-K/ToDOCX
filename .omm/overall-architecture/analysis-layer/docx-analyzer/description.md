@@ -1,0 +1,1 @@
+Reads an existing Word document with python-docx, extracts paragraph formatting features, groups similar paragraphs, and proposes a semantic type for each format cluster.

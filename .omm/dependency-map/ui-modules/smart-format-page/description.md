@@ -1,0 +1,1 @@
+Primary orchestration module. It imports analyzers, formatter entry points, template management, and UI widgets, then routes all user actions through those dependencies.

@@ -1,0 +1,1 @@
+The codebase is Python-first and packaging remains lightweight, so dependencies are expressed through direct imports rather than through framework DI containers or plugin registries.

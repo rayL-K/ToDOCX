@@ -1,0 +1,1 @@
+Analyzer for LaTeX sources. It depends mainly on regex-based parsing and emits structured paragraph records that the UI and LaTeX renderer can both consume.

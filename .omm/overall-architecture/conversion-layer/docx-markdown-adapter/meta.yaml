@@ -1,0 +1,9 @@
+created: 2026-04-08T08:37:31.065Z
+updated: 2026-04-08T08:37:31.066Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: docx-markdown-adapter
+children: []
+parentPath:
+  - conversion-layer

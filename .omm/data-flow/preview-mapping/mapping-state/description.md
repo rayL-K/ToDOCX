@@ -1,0 +1,1 @@
+Per-session UI state that stores original type guesses, selected tree items, scope mode, and the format_mappings override dictionary that is forwarded into conversion.

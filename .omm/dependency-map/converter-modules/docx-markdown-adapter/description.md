@@ -1,0 +1,1 @@
+Adapter that depends on mammoth, BeautifulSoup, and custom HTML-to-markdown logic to make existing DOCX files compatible with the markdown-based formatting path.

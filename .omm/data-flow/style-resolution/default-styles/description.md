@@ -1,0 +1,1 @@
+Static formatting defaults, font size maps, and spacing presets defined in config.py. They provide the baseline keys expected by the rest of the pipeline.

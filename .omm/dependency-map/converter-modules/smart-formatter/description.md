@@ -1,0 +1,1 @@
+Facade used by the UI for DOCX and markdown export. It depends on DocxToMarkdown, MarkdownConverter, and shared style helpers.

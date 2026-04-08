@@ -1,0 +1,8 @@
+graph LR
+    docx-roundtrip["DOCX Round Trip\nsrc/formatter.py + src/docx_to_md.py"]
+    docx-roundtrip -->|"hands normalized markdown to the shared renderer"| markdown-render["Markdown Render\nsrc/md_converter.py"]
+    markdown-direct["Markdown Direct\nsrc/formatter.py"]
+    markdown-direct -->|"passes markdown input straight to the renderer"| markdown-render
+    latex-direct["LaTeX Direct\nsrc/latex_formatter.py"]
+    latex-direct -->|"writes DOCX without using the markdown renderer"| final-save["Final Save\npython-docx Document.save()"]
+    markdown-render -->|"produces the in-memory document before save"| final-save

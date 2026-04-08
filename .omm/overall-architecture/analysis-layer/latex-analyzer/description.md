@@ -1,0 +1,1 @@
+Parses LaTeX source line by line, recognizes headings and content environments, and produces paragraph records that the UI can present and remap before export.

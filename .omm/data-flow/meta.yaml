@@ -1,0 +1,13 @@
+created: 2026-04-08T08:39:49.579Z
+updated: 2026-04-08T08:41:09.775Z
+update_count: 7
+last_field: note
+git_commit: e9ed15d
+git_branch: refactor/optimize-conversion-stability
+children:
+  - conversion-pipeline
+  - external-media
+  - output-docx
+  - preview-mapping
+  - source-file
+  - style-resolution

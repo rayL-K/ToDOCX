@@ -1,0 +1,9 @@
+created: 2026-04-08T08:38:08.653Z
+updated: 2026-04-08T08:38:08.654Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: latex-converter
+children: []
+parentPath:
+  - conversion-layer

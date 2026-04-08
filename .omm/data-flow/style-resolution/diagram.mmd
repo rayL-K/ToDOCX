@@ -1,0 +1,7 @@
+graph LR
+    default-styles["Default Styles\nsrc/config.py"]
+    default-styles -->|"seed the base style dictionary"| style-utils["Style Utils\nsrc/style_utils.py"]
+    stored-templates["Stored Templates\nsrc/template_manager.py"]
+    stored-templates -->|"load saved template payloads"| style-utils
+    ui-overrides["UI Overrides\nsrc/ui/smart_format_page.py"]
+    ui-overrides -->|"provide current form values"| style-utils

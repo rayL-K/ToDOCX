@@ -1,0 +1,9 @@
+created: 2026-04-08T08:57:22.232Z
+updated: 2026-04-08T08:57:22.233Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: config-module
+children: []
+parentPath:
+  - style-core

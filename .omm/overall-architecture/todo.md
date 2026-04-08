@@ -1,0 +1,1 @@
+Keep moving conversion rules, preview mapping logic, and template persistence behind smaller shared interfaces so the UI layer stops owning so much orchestration detail.

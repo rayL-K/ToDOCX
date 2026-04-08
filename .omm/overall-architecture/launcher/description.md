@@ -1,0 +1,1 @@
+Process entry point in main.py. It configures the QApplication instance, enables high-DPI flags, sets the default UI font, and opens the main window.

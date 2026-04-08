@@ -1,0 +1,1 @@
+Shared style helpers introduced to centralize deep style merging, run-level font application, paragraph alignment, and line spacing behavior across converters.

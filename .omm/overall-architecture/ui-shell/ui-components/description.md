@@ -1,0 +1,1 @@
+Reusable PyQt widgets such as the file drop zone, progress widget, and styled buttons that keep repeated UI fragments out of the main page module.

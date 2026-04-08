@@ -1,0 +1,1 @@
+Source analysis modules that classify content before conversion. They turn DOCX and LaTeX inputs into preview-friendly structures and suggested paragraph types.

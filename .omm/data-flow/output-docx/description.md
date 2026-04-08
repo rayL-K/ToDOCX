@@ -1,0 +1,1 @@
+Resulting DOCX artifact written beside the source file or into the user-selected output directory after conversion finishes.

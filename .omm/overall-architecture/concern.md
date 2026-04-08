@@ -1,0 +1,1 @@
+Core behavior is concentrated in a few large modules, especially smart_format_page.py, md_converter.py, and latex_formatter.py, so feature changes can still create broad regression risk.

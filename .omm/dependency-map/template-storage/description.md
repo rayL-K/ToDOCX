@@ -1,0 +1,1 @@
+Template persistence boundary implemented by template_manager.py. It stores user-defined style presets as JSON files and exposes them back to the UI as named templates.

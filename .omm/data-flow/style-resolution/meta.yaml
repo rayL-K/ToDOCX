@@ -1,0 +1,12 @@
+created: 2026-04-08T08:43:46.437Z
+updated: 2026-04-08T08:43:57.949Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: style-resolution
+children:
+  - default-styles
+  - stored-templates
+  - style-utils
+  - ui-overrides
+parentPath: []

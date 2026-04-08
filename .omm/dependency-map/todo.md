@@ -1,0 +1,1 @@
+Introduce narrower service interfaces between the UI, preview analyzers, and conversion entry points so future behavior changes do not keep expanding the import surface of SmartFormatPage.
