@@ -1,5 +1,6 @@
 """Markdown 转 DOCX 转换模块"""
 
+import binascii
 import re
 import base64
 from pathlib import Path
@@ -10,8 +11,12 @@ from docx import Document
 from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
-import httpx
+from docx.oxml.ns import qn
+from PIL import Image, UnidentifiedImageError
 
+from .diagnostics import get_logger, log_exception
+from .errors import ResourceAccessError
+from .resource_policy import ResourcePolicy
 from .style_utils import (
     apply_alignment,
     apply_line_spacing,
@@ -26,20 +31,35 @@ from .style_utils import (
 class MarkdownConverter:
     """Markdown 转换器"""
     
-    def __init__(self, styles: dict = None, type_overrides: dict = None):
+    def __init__(
+        self,
+        styles: dict = None,
+        type_overrides: dict = None,
+        resource_policy: ResourcePolicy | None = None,
+    ):
         self.styles = merge_styles(styles)
         self.type_overrides = dict(type_overrides or {})
         self.supported_extensions = ['.md', '.markdown']
-        self.image_cache = {}
+        self.resource_policy = resource_policy or ResourcePolicy()
+        self.base_dir = Path.cwd().resolve()
+        self.logger = get_logger("markdown")
     
-    def configure(self, styles: dict = None, type_overrides: dict = None):
+    def configure(
+        self,
+        styles: dict = None,
+        type_overrides: dict = None,
+        resource_policy: ResourcePolicy | None = None,
+    ):
         """更新转换器运行时配置。"""
         self.styles = merge_styles(styles)
         self.type_overrides = dict(type_overrides or {})
+        if resource_policy is not None:
+            self.resource_policy = resource_policy
     
     def convert_to_docx(self, input_path: str, output_path: str = None,
                         progress_callback=None, styles: dict = None,
-                        type_overrides: dict = None) -> str:
+                        type_overrides: dict = None,
+                        resource_policy: ResourcePolicy | None = None) -> str:
         """将Markdown转换为DOCX
         
         Args:
@@ -63,14 +83,18 @@ class MarkdownConverter:
         else:
             output_path = Path(output_path)
         
-        self.configure(styles=styles, type_overrides=type_overrides)
+        self.configure(
+            styles=styles,
+            type_overrides=type_overrides,
+            resource_policy=resource_policy,
+        )
         
         # 读取Markdown内容
         with open(input_path, 'r', encoding='utf-8') as f:
             md_content = f.read()
         
         # 获取Markdown文件所在目录，用于解析相对路径图片
-        self.base_dir = input_path.parent
+        self.base_dir = input_path.parent.resolve()
         
         if progress_callback:
             progress_callback(10, "解析Markdown内容...")
@@ -91,7 +115,8 @@ class MarkdownConverter:
     def convert_from_string(self, md_content: str, output_path: str,
                             progress_callback=None, styles: dict = None,
                             base_dir: str = None,
-                            type_overrides: dict = None) -> str:
+                            type_overrides: dict = None,
+                            resource_policy: ResourcePolicy | None = None) -> str:
         """从字符串转换Markdown到DOCX
         
         Args:
@@ -104,9 +129,13 @@ class MarkdownConverter:
         Returns:
             输出文件路径
         """
-        self.configure(styles=styles, type_overrides=type_overrides)
+        self.configure(
+            styles=styles,
+            type_overrides=type_overrides,
+            resource_policy=resource_policy,
+        )
         
-        self.base_dir = Path(base_dir) if base_dir else Path.cwd()
+        self.base_dir = Path(base_dir).resolve() if base_dir else Path.cwd().resolve()
         
         if progress_callback:
             progress_callback(10, "解析Markdown内容...")
@@ -224,8 +253,8 @@ class MarkdownConverter:
                 r_fonts = OxmlElement("w:rFonts")
                 r_pr.append(r_fonts)
             r_fonts.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}eastAsia", font_cn)
-        except Exception:
-            pass
+        except Exception as error:
+            self.logger.warning("应用正文默认样式失败: %s", error)
         
         # 创建各级标题样式
         for i in range(1, 5):
@@ -256,8 +285,8 @@ class MarkdownConverter:
                         r_fonts = OxmlElement("w:rFonts")
                         r_pr.append(r_fonts)
                     r_fonts.set("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}eastAsia", font_cn)
-                except Exception:
-                    pass
+                except Exception as error:
+                    self.logger.warning("应用标题默认样式失败 | level=%s | error=%s", i, error)
 
     def _resolve_block_type(self, original_type: str) -> str:
         """根据预览修改结果解析最终块类型。"""
@@ -572,18 +601,9 @@ class MarkdownConverter:
             if src.startswith('data:image'):
                 # Base64 图片
                 image_data = self._decode_base64_image(src)
-            elif src.startswith(('http://', 'https://')):
-                # 网络图片
-                image_data = self._download_image(src)
             else:
                 # 本地图片
-                img_path = self.base_dir / src if hasattr(self, 'base_dir') else Path(src)
-                if not img_path.exists():
-                    p = doc.add_paragraph(f'[图片: {alt or src}]')
-                    pf = p.paragraph_format
-                    pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    return
-                image_data = str(img_path)
+                image_data = self._resolve_local_image(src)
             
             # 添加图片
             p = doc.add_paragraph()
@@ -606,34 +626,122 @@ class MarkdownConverter:
                 caption_p = doc.add_paragraph(alt)
                 self._apply_caption_style(caption_p)
                     
-        except Exception as e:
-            # 图片加载失败，显示占位符
-            p = doc.add_paragraph(f'[图片加载失败: {alt or src}]')
-            pf = p.paragraph_format
-            pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        except ResourceAccessError as error:
+            self.logger.warning(
+                "图片已跳过 | code=%s | src=%s | base_dir=%s | reason=%s",
+                error.code,
+                src,
+                self.base_dir,
+                error.user_message,
+            )
+            self._add_image_placeholder(doc, alt or src, self._get_image_placeholder_prefix(error))
+        except Exception as error:
+            log_exception(
+                self.logger,
+                "图片处理失败",
+                error,
+                src=src,
+                alt=alt,
+                base_dir=str(self.base_dir),
+            )
+            self._add_image_placeholder(doc, alt or src, "图片处理失败")
     
     def _decode_base64_image(self, data_url):
         """解码Base64图片"""
-        # 提取base64数据
-        if ',' in data_url:
-            data_url = data_url.split(',')[1]
-        
-        image_data = base64.b64decode(data_url)
-        return BytesIO(image_data)
-    
-    def _download_image(self, url):
-        """下载网络图片"""
-        if url in self.image_cache:
-            return BytesIO(self.image_cache[url])
-        
+        if "," not in data_url:
+            raise ResourceAccessError(
+                "嵌入图片数据不完整。",
+                code="TODX210",
+                hint="请检查 Markdown 中的 data:image 写法是否完整。",
+            )
+
+        header, encoded = data_url.split(",", 1)
+        mime_type = header[5:].split(";", 1)[0].lower()
+        if ";base64" not in header:
+            raise ResourceAccessError(
+                "仅支持 Base64 编码的嵌入图片。",
+                code="TODX211",
+                hint="请改用标准的 data:image/...;base64,... 格式。",
+            )
+
+        self.resource_policy.validate_embedded_image_mime(mime_type)
+
         try:
-            with httpx.Client(timeout=30.0) as client:
-                response = client.get(url)
-                response.raise_for_status()
-                self.image_cache[url] = response.content
-                return BytesIO(response.content)
-        except:
-            raise Exception(f"无法下载图片: {url}")
+            image_data = base64.b64decode(encoded, validate=True)
+        except (ValueError, binascii.Error) as error:
+            raise ResourceAccessError(
+                "嵌入图片数据损坏，无法解析。",
+                code="TODX212",
+                hint="请重新生成或替换该嵌入图片。",
+            ) from error
+
+        self.resource_policy.validate_resource_size(len(image_data), "嵌入图片")
+        self._validate_image_bytes(image_data, label="嵌入图片")
+        return BytesIO(image_data)
+
+    def _resolve_local_image(self, src: str) -> str:
+        """解析并校验本地图片。"""
+
+        image_path = self.resource_policy.resolve_local_image(self.base_dir, src)
+        self._validate_image_file(image_path)
+        return str(image_path)
+
+    @staticmethod
+    def _get_image_placeholder_prefix(error: ResourceAccessError) -> str:
+        """根据错误类型选择占位说明。"""
+
+        if error.code == "TODX207":
+            return "图片未找到"
+        if error.code in {"TODX202", "TODX204", "TODX205"}:
+            return "图片已阻止"
+        return "图片未导入"
+
+    def _add_image_placeholder(self, doc, label: str, prefix: str) -> None:
+        """添加图片占位提示。"""
+
+        p = doc.add_paragraph(f"[{prefix}: {label}]")
+        pf = p.paragraph_format
+        pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    @staticmethod
+    def _validate_image_file(image_path: Path) -> None:
+        """验证本地文件确实是受支持图片。"""
+
+        try:
+            with Image.open(image_path) as image:
+                if image.format not in {"PNG", "JPEG", "GIF", "BMP", "WEBP"}:
+                    raise ResourceAccessError(
+                        "图片格式不受支持。",
+                        code="TODX213",
+                        hint="请改用 PNG、JPG、JPEG、GIF、BMP 或 WEBP 图片。",
+                    )
+                image.verify()
+        except (UnidentifiedImageError, OSError) as error:
+            raise ResourceAccessError(
+                "引用的本地文件不是有效图片。",
+                code="TODX214",
+                hint="请确认引用的是图片文件，而不是其他类型文件。",
+            ) from error
+
+    @staticmethod
+    def _validate_image_bytes(image_data: bytes, *, label: str) -> None:
+        """验证字节流图片有效性。"""
+
+        try:
+            with Image.open(BytesIO(image_data)) as image:
+                if image.format not in {"PNG", "JPEG", "GIF", "BMP", "WEBP"}:
+                    raise ResourceAccessError(
+                        f"{label} 格式不受支持。",
+                        code="TODX215",
+                        hint="请改用 PNG、JPG、JPEG、GIF、BMP 或 WEBP 图片。",
+                    )
+                image.verify()
+        except (UnidentifiedImageError, OSError) as error:
+            raise ResourceAccessError(
+                f"{label} 不是有效图片。",
+                code="TODX216",
+                hint="请重新生成或替换这张图片。",
+            ) from error
     
     def _add_table(self, doc, table_element):
         """添加表格"""

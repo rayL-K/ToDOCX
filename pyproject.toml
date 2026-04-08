@@ -8,7 +8,6 @@ dependencies = [
     "python-docx>=1.1.0",
     "markdown>=3.5.0",
     "Pillow>=10.0.0",
-    "httpx>=0.25.0",
     "mammoth>=1.6.0",
     "beautifulsoup4>=4.12.0",
     "lxml>=4.9.0",

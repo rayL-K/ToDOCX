@@ -3,8 +3,10 @@
 from pathlib import Path
 from typing import Dict, Any
 
+from .diagnostics import get_logger, log_event
 from .docx_to_md import DocxToMarkdown
 from .md_converter import MarkdownConverter
+from .resource_policy import ResourcePolicy
 from .style_utils import (
     apply_alignment,
     apply_line_spacing,
@@ -20,12 +22,14 @@ class SmartFormatter:
     def __init__(self, api_key: str = None):
         self.docx_to_md = DocxToMarkdown()
         self.md_converter = MarkdownConverter()
+        self.logger = get_logger("formatter")
     
     def format_document(self, input_path: str, output_path: str,
                        styles: Dict[str, Any] = None,
-                       type_overrides: Dict[str, str] = None,
-                       use_ai: bool = True,
-                       progress_callback=None) -> str:
+                        type_overrides: Dict[str, str] = None,
+                        resource_policy: ResourcePolicy | None = None,
+                        use_ai: bool = True,
+                        progress_callback=None) -> str:
         """智能格式化文档
         
         支持输入格式: .docx, .md
@@ -43,6 +47,7 @@ class SmartFormatter:
         """
         input_path = Path(input_path)
         output_path = Path(output_path)
+        resource_policy = resource_policy or ResourcePolicy()
         
         if not input_path.exists():
             raise FileNotFoundError(f"文件不存在: {input_path}")
@@ -77,6 +82,14 @@ class SmartFormatter:
         # 步骤3: 转换为DOCX并应用样式
         if progress_callback:
             progress_callback(65, "生成Word文档...")
+
+        log_event(
+            self.logger,
+            "开始执行格式转换",
+            input=str(input_path),
+            output=str(output_path),
+            input_type=suffix,
+        )
         
         final_styles = merge_styles(styles)
 
@@ -93,6 +106,7 @@ class SmartFormatter:
             base_dir=str(base_dir),
             styles=final_styles,
             type_overrides=type_overrides,
+            resource_policy=resource_policy,
         )
         
         if progress_callback:
@@ -253,8 +267,8 @@ class SmartFormatter:
                                                 break
                                         break
                             break
-            except Exception:
-                pass
+            except Exception as error:
+                self.logger.warning("更新编号字体失败，已回退段落级设置: %s", error)
         
         # 同时在段落级别设置 rPr 作为备用
         rPr = pPr.find(qn('w:rPr'))
