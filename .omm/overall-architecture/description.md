@@ -1,1 +1,1 @@
-Desktop architecture for the ToDOCX PyQt application, covering how the launcher, UI, analyzers, converters, and style subsystems collaborate.
+ToDOCX 桌面应用的总体架构，说明启动入口、界面层、分析层、转换层与样式模板子系统之间的协作关系。

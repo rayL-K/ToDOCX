@@ -1,1 +1,1 @@
-Modules that build exportable document output. They depend on python-docx, markdown parsing, LaTeX parsing helpers, and the shared style core.
+负责生成导出文档的模块集合，依赖 python-docx、Markdown 解析、LaTeX 解析辅助逻辑以及共享样式核心。

@@ -1,1 +1,1 @@
-Converts analyzed LaTeX content into DOCX paragraphs, tables, code blocks, and formulas. It also supports user-driven paragraph type remapping before writing the final document.
+把分析后的 LaTeX 内容转换为 DOCX 段落、表格、代码块和公式的模块，同时支持用户在导出前对段落类型进行重映射。

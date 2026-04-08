@@ -1,1 +1,1 @@
-Primary orchestration module. It imports analyzers, formatter entry points, template management, and UI widgets, then routes all user actions through those dependencies.
+主要编排模块。它直接依赖分析器、格式化入口、模板管理和界面组件，并把所有用户行为路由到这些依赖上。

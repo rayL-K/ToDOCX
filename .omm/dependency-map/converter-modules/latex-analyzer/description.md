@@ -1,1 +1,1 @@
-Parsing dependency pulled in by the LaTeX converter to create paragraph records, environment blocks, and user-remappable type metadata before rendering.
+作为 LaTeX 导出链的解析依赖，负责生成段落记录、环境块和可供用户重映射的类型元数据。

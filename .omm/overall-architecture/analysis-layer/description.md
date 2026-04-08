@@ -1,1 +1,1 @@
-Source analysis modules that classify content before conversion. They turn DOCX and LaTeX inputs into preview-friendly structures and suggested paragraph types.
+源文档分析模块集合，在真正转换之前完成内容分类。它把 DOCX 和 LaTeX 输入转换成便于预览和编辑的结构，并给出建议段落类型。

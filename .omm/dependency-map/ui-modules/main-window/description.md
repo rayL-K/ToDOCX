@@ -1,1 +1,1 @@
-Thin desktop shell module that imports SmartFormatPage and UI style constants, then arranges them into the top-level window.
+较薄的一层桌面外壳模块，负责导入 SmartFormatPage 和界面样式常量，并把它们组织为顶层窗口。

@@ -1,1 +1,1 @@
-Reads, writes, lists, renames, and deletes user template JSON files. It also exposes the built-in default template used by the UI template tab.
+用户模板管理模块，负责读取、写入、列出、重命名和删除模板 JSON 文件，并向界面暴露内置默认模板。

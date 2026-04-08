@@ -1,1 +1,1 @@
-PyQt modules under src/ui/. They own the highest fan-in within the runtime because they coordinate preview analyzers, template persistence, style editing, and conversion dispatch.
+src/ui/ 下的 PyQt 模块集合。它们在运行时具有最高的汇聚度，因为它们同时协调预览分析、模板管理、样式编辑和转换调度。

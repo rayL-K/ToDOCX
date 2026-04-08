@@ -1,1 +1,1 @@
-In-memory preview state owned by SmartFormatPage, including paragraph tree items, original type guesses, and user-edited mapping overrides used to drive conversion.
+由 SmartFormatPage 持有的内存预览状态，包括段落树条目、原始类型推断和用户修改后的映射结果，用于驱动最终转换。

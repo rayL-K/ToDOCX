@@ -1,1 +1,1 @@
-Renderer and helper functions for LaTeX export. It depends on LatexAnalyzer, python-docx, lxml-backed OMML generation, and shared style helpers.
+LaTeX 导出模块及其辅助函数，依赖 LatexAnalyzer、python-docx、基于 lxml 的 OMML 生成以及共享样式工具。

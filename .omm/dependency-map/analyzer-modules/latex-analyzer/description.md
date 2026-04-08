@@ -1,1 +1,1 @@
-Analyzer for LaTeX sources. It depends mainly on regex-based parsing and emits structured paragraph records that the UI and LaTeX renderer can both consume.
+LaTeX 源文件的分析器。它主要依赖正则与行级解析，输出结构化段落记录，供 UI 和 LaTeX 渲染器共同消费。

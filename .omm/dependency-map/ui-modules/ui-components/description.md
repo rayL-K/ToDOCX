@@ -1,1 +1,1 @@
-Reusable widget helpers with lower-level PyQt dependencies only. They reduce repetition in the main page module but do not know about analyzers or converters.
+可复用的界面组件辅助层，仅依赖较底层的 PyQt API，不关心分析器、模板或转换逻辑。

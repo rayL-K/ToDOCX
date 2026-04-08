@@ -1,1 +1,1 @@
-The recent addition of style_utils.py and a small unittest suite already created two better dependency anchors than the project had before.
+近期新增的 style_utils.py 和小规模 unittest 套件，已经为这个仓库提供了比过去更好的依赖锚点。

@@ -1,1 +1,1 @@
-The codebase is Python-first and packaging remains lightweight, so dependencies are expressed through direct imports rather than through framework DI containers or plugin registries.
+这是一个 Python 主导的桌面项目，依赖关系主要通过直接 import 表达，而不是通过框架级依赖注入或插件注册器。

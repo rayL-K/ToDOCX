@@ -1,1 +1,1 @@
-Preview analyzers used by the UI layer to classify DOCX and LaTeX input before the user starts conversion. They depend mainly on parsing libraries and config data.
+提供预览分类能力的分析器集合，被 UI 层在导出前调用，用于识别 DOCX 和 LaTeX 输入的结构与类型。

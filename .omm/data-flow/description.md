@@ -1,1 +1,1 @@
-Operational data path from user-selected source files through preview classification, style resolution, format-specific conversion, and final DOCX persistence.
+数据流视角，描述用户选择的源文件如何经过预览分类、样式解析、格式转换，最终落地为 DOCX 文件。

@@ -1,1 +1,1 @@
-Shared configuration and helper modules that normalize style dictionaries and feed default values into the UI, converters, and template storage.
+共享配置与样式辅助模块，负责规范化样式字典，并向 UI、转换器和模板存储提供默认值。

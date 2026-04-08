@@ -1,1 +1,1 @@
-PyQt presentation layer under src/ui/. It owns the main window, the interactive formatting page, progress reporting, file selection, and user-triggered conversion commands.
+src/ui/ 下的 PyQt 展示层。它负责主窗口、交互式排版页面、进度反馈、文件选择以及用户触发的转换命令。

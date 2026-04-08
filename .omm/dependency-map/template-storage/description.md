@@ -1,1 +1,1 @@
-Template persistence boundary implemented by template_manager.py. It stores user-defined style presets as JSON files and exposes them back to the UI as named templates.
+由 template_manager.py 实现的模板持久化边界，负责把用户定义的样式预设保存为 JSON 文件，并再提供给 UI 使用。

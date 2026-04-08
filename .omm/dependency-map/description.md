@@ -1,1 +1,1 @@
-Static dependency view of the desktop application, showing how entry modules, UI code, analyzers, converters, template storage, shared style helpers, and tests depend on each other.
+静态依赖视角，说明入口模块、界面层、分析器、转换器、模板存储、共享样式核心与测试之间的依赖关系。

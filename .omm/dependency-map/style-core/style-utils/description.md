@@ -1,1 +1,1 @@
-Shared helper module that applies alignment, line spacing, run formatting, and deep style merges, reducing duplicated style logic in converters.
+共享样式工具模块，负责对齐、行距、run 格式和深度样式合并，减少转换器中的重复样式逻辑。

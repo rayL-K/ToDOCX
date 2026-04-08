@@ -1,1 +1,1 @@
-Transforms markdown text into a python-docx Document. It parses markdown into HTML, rebuilds document structure, applies styles, and handles images, tables, code blocks, and formula placeholders.
+Markdown 到 DOCX 的渲染器。它先把 Markdown 解析为 HTML，再重建文档结构，并处理样式、图片、表格、代码块和公式占位。

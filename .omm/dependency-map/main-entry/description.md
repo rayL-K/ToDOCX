@@ -1,1 +1,1 @@
-The single process entry point in main.py. It imports MainWindow from the UI package and does not depend on analyzers or converters directly.
+main.py 中的单进程入口。它只依赖 UI 包中的 MainWindow，本身不直接依赖分析器或转换器。

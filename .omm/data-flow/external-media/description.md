@@ -1,1 +1,1 @@
-Image sources consumed during markdown rendering. The renderer accepts local file paths, base64-encoded data URLs, and remote URLs fetched with httpx.
+Markdown 渲染过程中消费的图片来源，支持本地路径、base64 数据 URL 以及通过 httpx 获取的远程地址。

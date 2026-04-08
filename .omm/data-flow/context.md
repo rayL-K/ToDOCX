@@ -1,1 +1,1 @@
-The same UI must support three source formats, so data flow splits early during preview generation and then converges again into a shared DOCX-writing goal.
+同一个界面要支持三种输入格式，因此数据流在预览阶段先分叉，再在 DOCX 输出目标上重新汇合。

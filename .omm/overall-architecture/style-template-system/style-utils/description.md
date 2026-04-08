@@ -1,1 +1,1 @@
-Shared style helpers introduced to centralize deep style merging, run-level font application, paragraph alignment, and line spacing behavior across converters.
+共享样式辅助模块，集中处理深度样式合并、run 级字体应用、段落对齐和行距设置，减少各转换器中的重复逻辑。

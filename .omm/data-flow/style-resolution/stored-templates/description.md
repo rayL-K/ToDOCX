@@ -1,1 +1,1 @@
-User-managed template JSON files. They let the UI restore a named style set and feed that data back into the runtime style merge path.
+用户保存的模板 JSON 文件。它们让界面可以恢复命名样式集，并把这些数据重新送回运行时样式合并流程。

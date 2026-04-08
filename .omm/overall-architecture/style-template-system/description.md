@@ -1,1 +1,1 @@
-Shared configuration and persistence layer for formatting rules. It defines built-in defaults, merges runtime overrides, and stores user template JSON files.
+共享的样式配置与模板持久化子系统。它定义内置默认值、合并运行时覆盖项，并保存用户模板 JSON 文件。

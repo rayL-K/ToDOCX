@@ -1,1 +1,1 @@
-Small unittest suite under tests/ that exercises the most important new shared style behavior, conversion mapping fixes, and template persistence guarantees.
+tests/ 下的小规模 unittest 套件，覆盖共享样式行为、转换映射修复以及模板持久化保证。

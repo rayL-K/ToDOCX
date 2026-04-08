@@ -1,1 +1,1 @@
-Preview stage for existing Word files. It inspects paragraph formatting and groups similar paragraphs so the user can change types once and apply them broadly.
+现有 Word 文件的预览阶段。它按格式特征分组段落，便于用户一次修改一个类型并批量应用到整组段落。

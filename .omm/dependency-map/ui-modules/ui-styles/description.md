@@ -1,1 +1,1 @@
-Static stylesheet definitions consumed by main_window.py and smart_format_page.py to keep theme strings out of widget construction code.
+静态样式表定义模块，被 main_window.py 和 smart_format_page.py 共同使用，用来把主题字符串从控件构造逻辑中剥离出来。

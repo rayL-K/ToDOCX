@@ -1,1 +1,1 @@
-Per-session UI state that stores original type guesses, selected tree items, scope mode, and the format_mappings override dictionary that is forwarded into conversion.
+界面会话中的映射状态，保存原始类型推断、树控件选中项、作用范围模式以及最终传给转换层的 format_mappings 覆盖字典。

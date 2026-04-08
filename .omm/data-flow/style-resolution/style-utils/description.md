@@ -1,1 +1,1 @@
-Shared merge and application helpers that normalize style dictionaries and apply them consistently to paragraphs, runs, alignment, and line spacing.
+共享样式辅助层，负责规范化样式字典，并把合并后的规则一致地应用到段落、run、对齐和行距设置上。

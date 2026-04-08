@@ -1,1 +1,1 @@
-Process entry point in main.py. It configures the QApplication instance, enables high-DPI flags, sets the default UI font, and opens the main window.
+main.py 中的进程入口。它负责配置 QApplication、开启高 DPI 选项、设置默认界面字体并打开主窗口。

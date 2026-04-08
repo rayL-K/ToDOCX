@@ -1,1 +1,1 @@
-Core behavior is concentrated in a few large modules, especially smart_format_page.py, md_converter.py, and latex_formatter.py, so feature changes can still create broad regression risk.
+核心行为仍集中在少数大文件中，尤其是 smart_format_page.py、md_converter.py 和 latex_formatter.py，后续改动仍有较高回归风险。

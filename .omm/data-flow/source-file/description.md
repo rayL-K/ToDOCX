@@ -1,1 +1,1 @@
-User-selected input file handled by the desktop UI. Supported runtime formats are existing DOCX, markdown text files, and LaTeX source files.
+由桌面界面选中的输入文件。运行时支持的格式是现有 DOCX、Markdown 文本文件和 LaTeX 源文件。

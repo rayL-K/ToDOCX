@@ -1,1 +1,1 @@
-Shared visual styling for the desktop shell. It centralizes stylesheet strings and helps main_window.py and smart_format_page.py present a consistent look.
+桌面界面的共享视觉样式定义，集中维护样式表字符串，帮助 main_window.py 和 smart_format_page.py 保持一致的外观。

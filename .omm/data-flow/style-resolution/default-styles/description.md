@@ -1,1 +1,1 @@
-Static formatting defaults, font size maps, and spacing presets defined in config.py. They provide the baseline keys expected by the rest of the pipeline.
+config.py 中定义的静态格式默认值、字号映射和行距预设，为整条导出链提供基础键集合。

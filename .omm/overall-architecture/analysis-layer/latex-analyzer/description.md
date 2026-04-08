@@ -1,1 +1,1 @@
-Parses LaTeX source line by line, recognizes headings and content environments, and produces paragraph records that the UI can present and remap before export.
+LaTeX 源码分析器。它按行识别标题、环境和段落块，生成可在界面中展示和重映射的段落记录。

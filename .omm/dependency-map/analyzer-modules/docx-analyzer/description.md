@@ -1,1 +1,1 @@
-Analyzer for existing Word files. It depends on python-docx and config font maps to summarize paragraph formatting and derive grouped signatures.
+现有 Word 文件的分析器。它依赖 python-docx 和配置中的字号映射，对段落格式做汇总并生成分组签名。

@@ -1,1 +1,1 @@
-High-level formatter entry point. It chooses the conversion path for DOCX or Markdown input, merges styles, forwards progress callbacks, and delegates detailed rendering to lower-level modules.
+高层格式化入口。它负责选择 DOCX 或 Markdown 的转换路径、合并样式、转发进度回调，并把细节渲染工作交给下层模块。

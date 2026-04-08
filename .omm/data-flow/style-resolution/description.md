@@ -1,1 +1,1 @@
-Style resolution path that combines built-in defaults, saved templates, and current UI values into the final style payload used during export.
+样式解析路径，把内置默认值、已保存模板和当前界面输入合成为导出时使用的最终样式字典。

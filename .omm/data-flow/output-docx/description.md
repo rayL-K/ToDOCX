@@ -1,1 +1,1 @@
-Resulting DOCX artifact written beside the source file or into the user-selected output directory after conversion finishes.
+转换结束后生成的 DOCX 成品，保存到源文件所在目录或用户手动选择的输出目录。

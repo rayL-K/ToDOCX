@@ -1,1 +1,1 @@
-Last step where the in-memory python-docx Document is serialized to a .docx file in the selected output directory.
+最后一步，把内存中的 python-docx Document 序列化为目标输出目录中的 .docx 文件。

@@ -1,1 +1,1 @@
-Converts an existing DOCX file into markdown using mammoth HTML extraction plus custom HTML-to-markdown translation so the formatter can reuse the markdown export path.
+把现有 DOCX 先转为 Markdown 的适配层，使用 mammoth 提取 HTML，再通过自定义 HTML 转 Markdown 逻辑复用统一导出路径。

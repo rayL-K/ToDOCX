@@ -1,1 +1,1 @@
-Defines built-in formatting defaults, font size maps, and line spacing presets used by both the UI editor and conversion modules.
+配置模块，定义内置格式默认值、字号映射和行距预设，供 UI 编辑器和转换模块共同使用。

@@ -1,1 +1,1 @@
-Adapter that depends on mammoth, BeautifulSoup, and custom HTML-to-markdown logic to make existing DOCX files compatible with the markdown-based formatting path.
+适配模块，依赖 mammoth、BeautifulSoup 和自定义 HTML 转 Markdown 逻辑，把现有 DOCX 接入基于 Markdown 的格式化路径。

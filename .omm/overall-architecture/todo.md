@@ -1,1 +1,1 @@
-Keep moving conversion rules, preview mapping logic, and template persistence behind smaller shared interfaces so the UI layer stops owning so much orchestration detail.
+继续把转换规则、预览映射和模板持久化收敛到更小的共享接口里，降低 UI 层承担的编排职责。

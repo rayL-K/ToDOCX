@@ -1,1 +1,1 @@
-Reads an existing Word document with python-docx, extracts paragraph formatting features, groups similar paragraphs, and proposes a semantic type for each format cluster.
+现有 Word 文档的分析器。它用 python-docx 读取段落格式特征，把相似段落分组，并为每个格式簇推断语义类型。

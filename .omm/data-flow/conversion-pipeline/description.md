@@ -1,1 +1,1 @@
-Execution path that turns preview state plus resolved styles into a final python-docx Document and saves it to the chosen output path.
+执行时的转换流水线，把预览状态和最终样式一起转换为 python-docx Document，并保存到指定输出路径。

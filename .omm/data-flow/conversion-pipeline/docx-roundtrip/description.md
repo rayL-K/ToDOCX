@@ -1,1 +1,1 @@
-Reformatting path for existing DOCX files. It converts DOCX content to markdown first, then reuses the markdown renderer so style application stays centralized.
+现有 DOCX 的重排路径。它先把 DOCX 转成 Markdown，再复用 Markdown 渲染器，这样样式应用可以集中在同一条导出链里。

@@ -1,1 +1,1 @@
-smart_format_page.py still imports analyzers, template persistence, and conversion entry points directly, which makes the UI layer the main architectural coupling hotspot.
+smart_format_page.py 仍直接依赖分析器、模板管理和转换入口，因此 UI 层仍是当前最显著的耦合热点。

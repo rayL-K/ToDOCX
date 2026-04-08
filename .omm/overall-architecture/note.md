@@ -1,1 +1,1 @@
-The recent optimization pass already introduced style_utils.py and regression tests, which is a good control point for further architecture cleanup.
+近期优化已经引入 style_utils.py 和回归测试，为后续结构整理提供了更稳定的控制点。

@@ -1,1 +1,1 @@
-Preview stage for LaTeX files. It recognizes headings, environments, and paragraph blocks so the UI can expose per-paragraph remapping before DOCX export.
+LaTeX 文件的预览阶段。它识别标题、环境和段落块，让界面可以在导出前按段落做类型重映射。

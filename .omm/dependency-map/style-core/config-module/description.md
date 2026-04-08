@@ -1,1 +1,1 @@
-Static config module that provides default style dictionaries, font size maps, and spacing presets consumed across the application.
+静态配置模块，提供默认样式字典、字号映射和行距预设，被整个应用的多个层面共同使用。

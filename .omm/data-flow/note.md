@@ -1,1 +1,1 @@
-Recent fixes already made markdown type overrides and full-document DOCX remapping flow through the conversion layer correctly, which reduced one class of UI-to-export mismatch.
+近期修复已经让 Markdown 类型覆盖和整篇 DOCX 重排正确流入转换层，减少了一类预览与导出不一致的问题。

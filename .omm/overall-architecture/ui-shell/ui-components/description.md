@@ -1,1 +1,1 @@
-Reusable PyQt widgets such as the file drop zone, progress widget, and styled buttons that keep repeated UI fragments out of the main page module.
+可复用的 PyQt 组件集合，例如拖拽上传区、进度组件和样式化按钮，用来减少主页面中的重复界面代码。

@@ -1,1 +1,1 @@
-Current values captured from the SmartFormatPage controls, including fonts, font sizes, alignment, indentation, spacing mode, and other export-facing style options.
+从 SmartFormatPage 控件中收集的当前值，包括字体、字号、对齐、缩进、行距模式以及其他面向导出的样式选项。

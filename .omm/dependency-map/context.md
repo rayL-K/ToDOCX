@@ -1,1 +1,1 @@
-This perspective is useful because the project still centers behavior in a small set of large files, so import direction and shared dependency pressure matter for future refactors.
+项目的核心行为仍集中在少数大文件中，因此导入方向和共享依赖压力对后续重构非常关键。

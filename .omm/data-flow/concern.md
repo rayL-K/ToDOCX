@@ -1,1 +1,1 @@
-Preview classification and conversion path selection are still partly owned by the UI module, so incorrect mapping state or future branching changes can break the handoff between preview and export.
+预览分类和转换路径选择仍有一部分逻辑留在 UI 层，如果映射状态出错或后续分支扩展不当，预览到导出的交接仍可能被破坏。

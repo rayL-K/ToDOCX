@@ -1,1 +1,1 @@
-Renderer that depends on markdown, BeautifulSoup, python-docx, and httpx. It is the most dependency-heavy export module because it handles many content types.
+Markdown 渲染器，依赖 markdown、BeautifulSoup、python-docx 和 httpx，是当前导出模块中外部依赖最重的一块。

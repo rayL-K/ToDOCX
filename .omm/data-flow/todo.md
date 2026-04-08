@@ -1,1 +1,1 @@
-Move preview-mapping state and path-selection rules into a narrower service boundary so format routing stops depending on SmartFormatPage internals.
+把预览映射状态和路径选择规则下沉到更窄的服务边界里，避免格式路由继续依赖 SmartFormatPage 内部细节。

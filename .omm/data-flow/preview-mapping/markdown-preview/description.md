@@ -1,1 +1,1 @@
-Preview stage for markdown files. It uses inline parsing inside smart_format_page.py to infer headings, body text, code blocks, quotes, images, and formulas.
+Markdown 文件的预览阶段。它在 smart_format_page.py 中用轻量逻辑识别标题、正文、代码块、引用、图片和公式。

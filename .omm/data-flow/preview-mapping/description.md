@@ -1,1 +1,1 @@
-Transient preview pipeline inside SmartFormatPage. It analyzes the source, shows editable paragraph/type assignments, and stores user overrides before export starts.
+SmartFormatPage 中的临时预览流程。它负责分析源文件、展示可编辑的段落类型，并在导出前保存用户的覆盖映射。

@@ -1,1 +1,1 @@
-Regression tests for style merging, markdown type overrides, and LaTeX paragraph remapping. They protect recent fixes in the conversion path.
+覆盖样式合并、Markdown 类型覆盖和 LaTeX 段落重映射的回归测试，用来保护近期修复的转换链逻辑。

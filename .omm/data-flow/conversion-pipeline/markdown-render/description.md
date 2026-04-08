@@ -1,1 +1,1 @@
-Shared markdown-to-DOCX renderer. It reconstructs headings, body paragraphs, lists, tables, code blocks, formulas, and images inside a python-docx document.
+共享的 Markdown 到 DOCX 渲染器，负责重建标题、正文、列表、表格、代码块、公式和图片等文档结构。
