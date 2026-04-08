@@ -1,7 +1,6 @@
 """模板管理模块"""
 
 import json
-import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -20,6 +19,19 @@ class TemplateManager:
         
         # 确保目录存在
         self.template_dir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _normalize_template_name(name: str) -> str:
+        """将模板名转换为安全文件名。"""
+        safe_name = "".join(c for c in name if c.isalnum() or c in (" ", "-", "_")).strip()
+        safe_name = safe_name.replace(" ", "_")
+        if not safe_name:
+            raise ValueError("模板名称不能为空")
+        return safe_name
+
+    def _get_template_path(self, name: str) -> Path:
+        """获取模板文件路径。"""
+        return self.template_dir / f"{self._normalize_template_name(name)}.json"
     
     def save_template(self, name: str, styles: Dict[str, Any], description: str = "") -> str:
         """保存模板
@@ -37,17 +49,26 @@ class TemplateManager:
             "description": description,
             "styles": styles
         }
-        
-        # 清理文件名
-        safe_name = "".join(c for c in name if c.isalnum() or c in (' ', '-', '_')).strip()
-        safe_name = safe_name.replace(' ', '_')
-        
-        file_path = self.template_dir / f"{safe_name}.json"
+
+        file_path = self._get_template_path(name)
         
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(template_data, f, ensure_ascii=False, indent=2)
         
         return str(file_path)
+
+    def load_template_data(self, name: str) -> Optional[Dict[str, Any]]:
+        """加载完整模板信息。"""
+        try:
+            file_path = self._get_template_path(name)
+        except ValueError:
+            return None
+
+        if not file_path.exists():
+            return None
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
     
     def load_template(self, name: str) -> Optional[Dict[str, Any]]:
         """加载模板
@@ -58,17 +79,10 @@ class TemplateManager:
         Returns:
             模板样式配置，如果不存在返回None
         """
-        safe_name = "".join(c for c in name if c.isalnum() or c in (' ', '-', '_')).strip()
-        safe_name = safe_name.replace(' ', '_')
-        
-        file_path = self.template_dir / f"{safe_name}.json"
-        
-        if not file_path.exists():
+        template_data = self.load_template_data(name)
+        if not template_data:
             return None
-        
-        with open(file_path, 'r', encoding='utf-8') as f:
-            template_data = json.load(f)
-        
+
         return template_data.get("styles", {})
     
     def delete_template(self, name: str) -> bool:
@@ -80,13 +94,13 @@ class TemplateManager:
         Returns:
             是否删除成功
         """
-        safe_name = "".join(c for c in name if c.isalnum() or c in (' ', '-', '_')).strip()
-        safe_name = safe_name.replace(' ', '_')
-        
-        file_path = self.template_dir / f"{safe_name}.json"
-        
+        try:
+            file_path = self._get_template_path(name)
+        except ValueError:
+            return False
+
         if file_path.exists():
-            os.remove(file_path)
+            file_path.unlink()
             return True
         return False
     
@@ -98,7 +112,7 @@ class TemplateManager:
         """
         templates = []
         
-        for file_path in self.template_dir.glob("*.json"):
+        for file_path in sorted(self.template_dir.glob("*.json")):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
@@ -128,15 +142,16 @@ class TemplateManager:
         Returns:
             是否重命名成功
         """
-        # 加载原模板
-        styles = self.load_template(old_name)
-        if styles is None:
+        template_data = self.load_template_data(old_name)
+        if template_data is None:
             return False
         
-        # 保存为新名称
-        self.save_template(new_name, styles)
+        self.save_template(
+            new_name,
+            template_data.get("styles", {}),
+            template_data.get("description", ""),
+        )
         
-        # 删除原模板
         self.delete_template(old_name)
         
         return True
