@@ -1,7 +1,7 @@
 graph LR
-    docx-preview["DOCX Preview\nsrc/docx_analyzer.py"]
-    docx-preview -->|"fills grouped format signatures"| mapping-state["Mapping State\nsrc/ui/smart_format_page.py"]
-    latex-preview["LaTeX Preview\nsrc/latex_analyzer.py"]
-    latex-preview -->|"fills paragraph type records"| mapping-state
-    markdown-preview["Markdown Preview\nsrc/ui/smart_format_page.py"]
-    markdown-preview -->|"fills lightweight markdown block tags"| mapping-state
+    docx-preview["DOCX 预览\nsrc/docx_analyzer.py"]
+    docx-preview -->|"填充格式分组签名"| mapping-state["映射状态\nsrc/ui/smart_format_page.py"]
+    latex-preview["LaTeX 预览\nsrc/latex_analyzer.py"]
+    latex-preview -->|"填充段落类型记录"| mapping-state
+    markdown-preview["Markdown 预览\nsrc/ui/smart_format_page.py"]
+    markdown-preview -->|"填充轻量块标签"| mapping-state

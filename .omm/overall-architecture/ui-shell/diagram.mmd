@@ -1,6 +1,6 @@
 graph LR
-    main-window["Main Window\nsrc/ui/main_window.py"]
-    main-window -->|"hosts the primary formatting workspace"| smart-format-page["Smart Format Page\nsrc/ui/smart_format_page.py"]
-    smart-format-page -->|"reuses shared widgets for file drop, progress, and layout"| ui-components["UI Components\nsrc/ui/components.py"]
-    main-window -->|"applies the top-level visual theme"| ui-styles["UI Styles\nsrc/ui/styles.py"]
-    smart-format-page -->|"uses theme constants and widget styling"| ui-styles
+    main-window["主窗口\nsrc/ui/main_window.py"]
+    main-window -->|"承载主工作区"| smart-format-page["智能排版页\nsrc/ui/smart_format_page.py"]
+    smart-format-page -->|"复用拖拽区与进度组件"| ui-components["界面组件\nsrc/ui/components.py"]
+    main-window -->|"应用顶层主题"| ui-styles["界面样式\nsrc/ui/styles.py"]
+    smart-format-page -->|"复用样式常量"| ui-styles

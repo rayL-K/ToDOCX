@@ -1,7 +1,7 @@
 graph LR
-    default-styles["Default Styles\nsrc/config.py"]
-    default-styles -->|"seed the base style dictionary"| style-utils["Style Utils\nsrc/style_utils.py"]
-    stored-templates["Stored Templates\nsrc/template_manager.py"]
-    stored-templates -->|"load saved template payloads"| style-utils
-    ui-overrides["UI Overrides\nsrc/ui/smart_format_page.py"]
-    ui-overrides -->|"provide current form values"| style-utils
+    default-styles["默认样式\nsrc/config.py"]
+    default-styles -->|"提供基础样式字典"| style-utils["样式工具\nsrc/style_utils.py"]
+    stored-templates["已存模板\nsrc/template_manager.py"]
+    stored-templates -->|"加载模板内容"| style-utils
+    ui-overrides["界面覆盖项\nsrc/ui/smart_format_page.py"]
+    ui-overrides -->|"提供当前表单值"| style-utils

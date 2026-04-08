@@ -1,7 +1,7 @@
 graph LR
-    docx-analyzer["DOCX Analyzer\nsrc/docx_analyzer.py"]
-    docx-analyzer -->|"groups paragraph signatures"| preview-model["Preview Model\nsrc/ui/smart_format_page.py"]
-    latex-analyzer["LaTeX Analyzer\nsrc/latex_analyzer.py"]
-    latex-analyzer -->|"indexes headings, blocks, and environments"| preview-model
-    markdown-preview["Markdown Preview Parser\nsrc/ui/smart_format_page.py"]
-    markdown-preview -->|"tags lightweight markdown blocks"| preview-model
+    docx-analyzer["DOCX 分析器\nsrc/docx_analyzer.py"]
+    docx-analyzer -->|"生成格式分组"| preview-model["预览模型\nsrc/ui/smart_format_page.py"]
+    latex-analyzer["LaTeX 分析器\nsrc/latex_analyzer.py"]
+    latex-analyzer -->|"识别标题与环境块"| preview-model
+    markdown-preview["Markdown 预览解析\nsrc/ui/smart_format_page.py"]
+    markdown-preview -->|"标记轻量块类型"| preview-model

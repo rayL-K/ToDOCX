@@ -1,12 +1,12 @@
 graph LR
-    main-entry["Main Entry\nmain.py"]
-    main-entry -->|"instantiates the desktop window"| ui-modules["UI Modules\nsrc/ui/"]
-    ui-modules -->|"imports preview analyzers"| analyzer-modules["Analyzer Modules\nsrc/docx_analyzer.py + src/latex_analyzer.py"]
-    ui-modules -->|"invokes conversion entry points in worker threads"| converter-modules["Converter Modules\nsrc/formatter.py + src/md_converter.py + src/latex_formatter.py + src/docx_to_md.py"]
-    ui-modules -->|"loads and saves named templates"| template-storage["Template Storage\nsrc/template_manager.py"]
-    ui-modules -->|"reads default style values for editor controls"| style-core["Style Core\nsrc/config.py + src/style_utils.py"]
-    converter-modules -->|"depends on shared style helpers"| style-core
-    template-storage -->|"uses built-in defaults as fallback content"| style-core
-    test-suite["Regression Tests\ntests/"]
-    test-suite -->|"exercises converter and template modules"| converter-modules
-    test-suite -->|"verifies shared style behavior"| style-core
+    main-entry["主入口\nmain.py"]
+    main-entry -->|"创建桌面窗口"| ui-modules["界面模块\nsrc/ui/"]
+    ui-modules -->|"导入预览分析器"| analyzer-modules["分析模块\nsrc/docx_analyzer.py + src/latex_analyzer.py"]
+    ui-modules -->|"调用转换入口"| converter-modules["转换模块\nsrc/formatter.py + src/md_converter.py + src/latex_formatter.py + src/docx_to_md.py"]
+    ui-modules -->|"加载与保存模板"| template-storage["模板存储\nsrc/template_manager.py"]
+    ui-modules -->|"读取默认样式"| style-core["样式核心\nsrc/config.py + src/style_utils.py"]
+    converter-modules -->|"复用样式工具"| style-core
+    template-storage -->|"回退到默认值"| style-core
+    test-suite["回归测试\ntests/"]
+    test-suite -->|"覆盖转换逻辑"| converter-modules
+    test-suite -->|"覆盖样式逻辑"| style-core
