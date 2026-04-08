@@ -1,6 +1,0 @@
-graph LR
-    smart-formatter["格式化入口\nsrc/formatter.py"]
-    smart-formatter -->|"导入 DOCX 转 Markdown 适配层"| docx-markdown-adapter["DOCX Markdown 适配\nsrc/docx_to_md.py"]
-    smart-formatter -->|"导入 Markdown 渲染器"| markdown-converter["Markdown 转换器\nsrc/md_converter.py"]
-    latex-converter["LaTeX 转换器\nsrc/latex_formatter.py"]
-    latex-converter -->|"导入 LaTeX 分析器"| latex-analyzer["LaTeX 分析器\nsrc/latex_analyzer.py"]

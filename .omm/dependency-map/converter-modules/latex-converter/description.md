@@ -1,1 +1,0 @@
-LaTeX 导出模块及其辅助函数，依赖 LatexAnalyzer、python-docx、基于 lxml 的 OMML 生成以及共享样式工具。

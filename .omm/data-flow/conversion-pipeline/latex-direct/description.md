@@ -1,1 +1,0 @@
-LaTeX 文件的直接导出路径。它依赖 LatexAnalyzer 的输出和用户映射结果，不经过 Markdown 渲染器而直接生成 DOCX。

@@ -1,7 +1,0 @@
-graph LR
-    launcher["启动入口\nmain.py"]
-    launcher -->|"启动界面"| ui-shell["界面层\nsrc/ui/"]
-    ui-shell -->|"读取模板与默认样式"| style-template-system["样式模板层\nsrc/config.py + src/template_manager.py + src/style_utils.py"]
-    ui-shell -->|"构建预览模型"| analysis-layer["分析层\nsrc/docx_analyzer.py + src/latex_analyzer.py"]
-    ui-shell -->|"发起后台转换"| conversion-layer["转换层\nsrc/formatter.py + src/md_converter.py + src/latex_formatter.py + src/docx_to_md.py"]
-    conversion-layer -->|"应用样式结果"| style-template-system

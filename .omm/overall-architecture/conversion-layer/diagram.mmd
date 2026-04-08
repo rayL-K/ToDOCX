@@ -1,6 +1,0 @@
-graph LR
-    smart-formatter["格式化入口\nsrc/formatter.py"]
-    smart-formatter -->|"DOCX 先转 Markdown"| docx-markdown-adapter["DOCX Markdown 适配\nsrc/docx_to_md.py"]
-    smart-formatter -->|"渲染 Markdown 到 DOCX"| markdown-converter["Markdown 转换器\nsrc/md_converter.py"]
-    docx-markdown-adapter -->|"提供重排用的 Markdown"| markdown-converter
-    smart-formatter -->|"共享样式解析结果"| latex-converter["LaTeX 转换器\nsrc/latex_formatter.py"]

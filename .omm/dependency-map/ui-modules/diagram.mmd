@@ -1,5 +1,0 @@
-graph LR
-    main-window["主窗口\nsrc/ui/main_window.py"]
-    main-window -->|"创建主工作区"| smart-format-page["智能排版页\nsrc/ui/smart_format_page.py"]
-    smart-format-page -->|"复用组件"| ui-components["界面组件\nsrc/ui/components.py"]
-    main-window -->|"导入共享样式常量"| ui-styles["界面样式\nsrc/ui/styles.py"]

@@ -1,1 +1,0 @@
-负责生成最终 DOCX 的转换模块集合，涵盖 Markdown 渲染、LaTeX 渲染、DOCX 转 Markdown 适配，以及共享的格式编排逻辑。

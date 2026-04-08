@@ -1,9 +1,0 @@
-graph LR
-    source-file["源文件\n界面选中的 .docx .md .tex"]
-    source-file -->|"识别并生成映射"| preview-mapping["预览映射\nsrc/ui/smart_format_page.py"]
-    preview-mapping -->|"决定转换路径"| conversion-pipeline["转换流水线\nsrc/formatter.py + src/md_converter.py + src/latex_formatter.py"]
-    style-resolution["样式解析\nsrc/config.py + src/style_utils.py + src/template_manager.py"]
-    style-resolution -->|"合并默认值与覆盖项"| conversion-pipeline
-    external-media["外部媒体\n本地路径 + base64 + httpx 下载"]
-    external-media -->|"提供图片数据"| conversion-pipeline
-    conversion-pipeline -->|"写出文档"| output-docx["输出 DOCX\n用户选择的输出目录"]

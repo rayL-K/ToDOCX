@@ -1,1 +1,0 @@
-供 UI 调用的门面入口，负责 DOCX 和 Markdown 导出，依赖 DocxToMarkdown、MarkdownConverter 以及共享样式辅助模块。

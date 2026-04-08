@@ -1,1 +1,0 @@
-DOCX 重排目前仍然经过 Markdown 往返，而 Markdown 和 LaTeX 走直接渲染路径，所以不同输入类型的保真度和性能特征并不相同。

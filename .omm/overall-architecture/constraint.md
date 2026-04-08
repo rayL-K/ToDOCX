@@ -1,1 +1,0 @@
-运行时依赖 Python 3.10 以上版本与 PyQt5，文档生成依赖 python-docx 以及 pyproject.toml 中声明的格式处理库。

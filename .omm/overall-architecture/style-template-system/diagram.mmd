@@ -1,5 +1,0 @@
-graph LR
-    config-module["配置模块\nsrc/config.py"]
-    config-module -->|"提供默认样式与字号映射"| style-utils["样式工具\nsrc/style_utils.py"]
-    template-manager["模板管理器\nsrc/template_manager.py"]
-    template-manager -->|"围绕默认样式做模板持久化"| config-module

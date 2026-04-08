@@ -1,1 +1,0 @@
-顶层 QMainWindow 包装层，负责应用全局样式、设置图标和页眉，并把 SmartFormatPage 挂为主工作区。

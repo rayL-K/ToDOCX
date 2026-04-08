@@ -1,7 +1,0 @@
-graph LR
-    docx-preview["DOCX 预览\nsrc/docx_analyzer.py"]
-    docx-preview -->|"填充格式分组签名"| mapping-state["映射状态\nsrc/ui/smart_format_page.py"]
-    latex-preview["LaTeX 预览\nsrc/latex_analyzer.py"]
-    latex-preview -->|"填充段落类型记录"| mapping-state
-    markdown-preview["Markdown 预览\nsrc/ui/smart_format_page.py"]
-    markdown-preview -->|"填充轻量块标签"| mapping-state

@@ -1,1 +1,0 @@
-Markdown 文件的预览阶段。它在 smart_format_page.py 中用轻量逻辑识别标题、正文、代码块、引用、图片和公式。

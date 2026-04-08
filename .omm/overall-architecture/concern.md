@@ -1,1 +1,0 @@
-核心行为仍集中在少数大文件中，尤其是 smart_format_page.py、md_converter.py 和 latex_formatter.py，后续改动仍有较高回归风险。
