@@ -9,8 +9,10 @@ __pycache__/
 # 打包 / 分发相关文件与目录
 .Python
 build/
+build-opt/
 develop-eggs/
 dist/
+dist-opt/
 downloads/
 eggs/
 .eggs/
