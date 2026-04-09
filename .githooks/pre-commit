@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -eu
+
+hook_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+exec sh "$hook_dir/_branch-rules.sh" validate_pre_commit
