@@ -1,6 +1,6 @@
 [project]
 name = "toword"
-version = "1.0.0"
+version = "1.0.2"
 description = "DOCX, LaTeX, and Markdown to DOCX converter with smart formatting"
 readme = "README.md"
 requires-python = ">=3.10"
