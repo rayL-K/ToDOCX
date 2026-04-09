@@ -32,7 +32,6 @@ output/
 #  通常由 Python 脚本根据模板生成，用于在打包前写入日期等元信息
 *.manifest
 *.spec
-!ToDOCX.spec
 
 # 安装器日志
 pip-log.txt
@@ -220,6 +219,7 @@ htmlcov/
 output_test/
 /.omm/
 /.playwright-cli/
+scripts/build_release.ps1
 
 # LaTeX / 临时文档（如果使用）
 *.aux
