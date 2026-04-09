@@ -30,6 +30,7 @@ output/
 #  通常由 Python 脚本根据模板生成，用于在打包前写入日期等元信息
 *.manifest
 *.spec
+!ToDOCX.spec
 
 # 安装器日志
 pip-log.txt
