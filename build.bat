@@ -28,7 +28,7 @@ if %errorlevel% neq 0 (
 echo [3/4] Done>>"%LOG%"
 
 echo [4/4] Creating zip archive...
-python -c "import sys; sys.path.insert(0,'src'); exec(open('src/version.py').read()); print(__version__,end='')" > "%TEMP%\todocx-ver.tmp"
+python -c "import sys; sys.path.insert(0,'src'); exec(open('src/version.py',encoding='utf-8').read()); print(__version__,end='')" > "%TEMP%\todocx-ver.tmp"
 set /p VER=<"%TEMP%\todocx-ver.tmp"
 powershell -NoProfile -Command "Compress-Archive -Path 'dist\ToDOCX\*' -DestinationPath 'dist\ToDOCX-v%VER%-win64.zip' -Force"
 if %errorlevel% neq 0 (
