@@ -1,6 +1,6 @@
 """版本信息 - 单一来源"""
 
-__version__ = "1.0.4"
+__version__ = "1.1.0"
 __author__ = "rayL_K"
 __app_name__ = "ToDOCX"
 
