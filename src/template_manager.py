@@ -17,8 +17,8 @@ class TemplateManager:
     """样式模板管理器"""
 
     SUPPORTED_SCHEMA_VERSIONS = {BUILTIN_DEFAULTS.template_schema_version}
-    
-    def __init__(self, template_dir: str = None):
+
+    def __init__(self, template_dir: str | None = None):
         if template_dir is None:
             self.template_dir = get_templates_dir()
             self.legacy_template_dir = Path(__file__).resolve().parent.parent / "templates"
@@ -123,12 +123,12 @@ class TemplateManager:
                     hint="请重新保存该模板。",
                 )
 
-        normalized = dict(data)
-        normalized["schema_version"] = schema_version
-        normalized["name"] = name
-        normalized["description"] = description
-        normalized["styles"] = styles
-        return normalized
+        return {
+            "schema_version": schema_version,
+            "name": name,
+            "description": description,
+            "styles": styles,
+        }
 
     def _read_template_file(self, file_path: Path) -> Dict[str, Any]:
         """读取模板文件。"""
@@ -198,27 +198,21 @@ class TemplateManager:
     
     def save_template(self, name: str, styles: Dict[str, Any], description: str = "") -> str:
         """保存模板
-        
+
         Args:
             name: 模板名称
             styles: 样式配置
             description: 模板描述
-            
+
         Returns:
             模板文件路径
         """
         file_path = self._get_template_path(name)
-        template_payload = self._validate_template_payload(
-            self._build_template_payload(name, styles, description),
-            expected_name=name,
-        )
+        template_payload = self._build_template_payload(name, styles, description)
+        self._validate_template_payload(template_payload, expected_name=name)
 
         try:
-            atomic_write_json(
-                file_path,
-                template_payload,
-            )
-            self._validate_template_payload(self._read_template_file(file_path), expected_name=name)
+            atomic_write_json(file_path, template_payload)
         except OSError as error:
             raise TemplateStorageError(
                 "模板保存失败。",
@@ -229,8 +223,15 @@ class TemplateManager:
         log_event(self.logger, "模板已保存", template=str(file_path), name=name)
         return str(file_path)
 
-    def load_template_data(self, name: str) -> Optional[Dict[str, Any]]:
-        """加载完整模板信息。"""
+    def load_template(self, name: str) -> Optional[Dict[str, Any]]:
+        """加载模板样式配置
+
+        Args:
+            name: 模板名称
+
+        Returns:
+            模板样式配置字典，如果不存在返回 None
+        """
         try:
             file_path = self._get_template_path(name)
         except ValueError as error:
@@ -243,22 +244,8 @@ class TemplateManager:
         if not file_path.exists():
             return None
 
-        return self._read_template_file(file_path)
-    
-    def load_template(self, name: str) -> Optional[Dict[str, Any]]:
-        """加载模板
-        
-        Args:
-            name: 模板名称
-            
-        Returns:
-            模板样式配置，如果不存在返回None
-        """
-        template_data = self.load_template_data(name)
-        if not template_data:
-            return None
-
-        return template_data.get("styles", {})
+        data = self._read_template_file(file_path)
+        return data.get("styles", {})
     
     def delete_template(self, name: str) -> bool:
         """删除模板
@@ -291,20 +278,20 @@ class TemplateManager:
             return True
         return False
     
-    def list_templates(self) -> List[Dict[str, str]]:
-        """列出所有模板
-        
+    def list_templates(self) -> List[Dict[str, Any]]:
+        """列出所有用户模板
+
         Returns:
-            模板列表，每个元素包含name和description
+            模板列表，每个元素包含 name、description、file、status
         """
         templates = []
-        
+
         for file_path in sorted(self.template_dir.glob("*.json")):
             try:
                 data = self._read_template_file(file_path)
                 templates.append({
-                    "name": data.get("name", file_path.stem),
-                    "description": data.get("description", ""),
+                    "name": data["name"],
+                    "description": data["description"],
                     "file": str(file_path),
                     "status": "ok",
                 })
@@ -321,9 +308,9 @@ class TemplateManager:
                     "file": str(file_path),
                     "status": "corrupted",
                 })
-        
+
         return templates
-    
+
     def get_builtin_templates(self) -> Dict[str, Dict[str, Any]]:
         """获取内置模板"""
         return {
@@ -332,21 +319,22 @@ class TemplateManager:
     
     def rename_template(self, old_name: str, new_name: str) -> bool:
         """重命名模板
-        
+
         Args:
             old_name: 原模板名称
             new_name: 新模板名称
-            
+
         Returns:
             是否重命名成功
         """
-        template_data = self.load_template_data(old_name)
-        if template_data is None:
+        file_path = self._get_template_path(old_name)
+        if not file_path.exists():
             return False
 
-        old_path = self._get_template_path(old_name)
+        data = self._read_template_file(file_path)
+
         new_path = self._get_template_path(new_name)
-        if new_path.exists() and new_path != old_path:
+        if new_path.exists() and new_path != file_path:
             raise TemplateStorageError(
                 "同名模板已存在。",
                 code="TODX308",
@@ -355,11 +343,11 @@ class TemplateManager:
 
         self.save_template(
             new_name,
-            template_data.get("styles", {}),
-            template_data.get("description", ""),
+            data.get("styles", {}),
+            data.get("description", ""),
         )
 
-        if new_path != old_path:
+        if new_path != file_path:
             self.delete_template(old_name)
 
         log_event(
@@ -367,7 +355,5 @@ class TemplateManager:
             "模板已重命名",
             old_name=old_name,
             new_name=new_name,
-            old_path=str(old_path),
-            new_path=str(new_path),
         )
         return True

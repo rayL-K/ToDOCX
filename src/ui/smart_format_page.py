@@ -689,11 +689,12 @@ class SmartFormatPage(QWidget):
         if ok and name:
             styles = self._get_current_styles()
             try:
-                self.template_manager.save_template(name, styles)
+                file_path = self.template_manager.save_template(name, styles)
             except Exception as error:
                 self._show_error("保存模板失败", error)
                 return
             self._refresh_template_list()
+            QMessageBox.information(self, "保存成功", f"模板已保存至:\n{file_path}")
 
     def _rename_template(self):
         """重命名模板"""
