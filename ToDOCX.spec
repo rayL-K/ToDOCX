@@ -4,7 +4,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('src/ui/docx.ico', 'src/ui')],
+    datas=[('src/ui/docx.ico', 'src/ui'), ('templates', 'templates')],
     hiddenimports=[
         'markdown',
         'markdown.extensions',

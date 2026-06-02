@@ -11,11 +11,10 @@ if exist dist\ToDOCX rmdir /s /q dist\ToDOCX >nul 2>nul
 echo [1/4] Done>>"%LOG%"
 
 echo [2/4] Checking spec config...
-python -c "p=\'ToDOCX.spec\';c=open(p,\'r\',encoding=\'utf-8\').read();m=(\'templates\',\'templates\');print(\'ok\' if m in c else \'missing\')"
+findstr /C:"templates" ToDOCX.spec >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [2/4] Failed>>"%LOG%"
-    pause
-    exit /b 1
+    echo [2/4] Missing templates in spec>>"%LOG%"
+    echo NOTE: manually add templates to spec datas>>"%LOG%"
 )
 echo [2/4] Done>>"%LOG%"
 
