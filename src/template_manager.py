@@ -28,6 +28,13 @@ class TemplateManager:
 
         self.template_dir.mkdir(parents=True, exist_ok=True)
         self.logger = get_logger("templates")
+        self._lazy_pending = True
+
+    def _ensure_lazy_init(self) -> None:
+        """延迟执行模板迁移和内置模板写入（避免在 UI 构建时做 I/O）。"""
+        if not self._lazy_pending:
+            return
+        self._lazy_pending = False
         self._migrate_legacy_templates()
         self._ensure_builtin_templates()
 
@@ -198,16 +205,8 @@ class TemplateManager:
             )
     
     def save_template(self, name: str, styles: Dict[str, Any], description: str = "") -> str:
-        """保存模板
-
-        Args:
-            name: 模板名称
-            styles: 样式配置
-            description: 模板描述
-
-        Returns:
-            模板文件路径
-        """
+        """保存模板"""
+        self._ensure_lazy_init()
         file_path = self._get_template_path(name)
         template_payload = self._build_template_payload(name, styles, description)
         self._validate_template_payload(template_payload, expected_name=name)
@@ -233,6 +232,7 @@ class TemplateManager:
         Returns:
             模板样式配置字典，如果不存在返回 None
         """
+        self._ensure_lazy_init()
         try:
             file_path = self._get_template_path(name)
         except ValueError as error:
@@ -241,22 +241,15 @@ class TemplateManager:
                 code="TODX305",
                 hint="请使用字母、数字、空格、下划线或中划线命名模板。",
             ) from error
-
         if not file_path.exists():
             return None
 
         data = self._read_template_file(file_path)
         return data.get("styles", {})
-    
+
     def delete_template(self, name: str) -> bool:
-        """删除模板
-        
-        Args:
-            name: 模板名称
-            
-        Returns:
-            是否删除成功
-        """
+        """删除模板"""
+        self._ensure_lazy_init()
         try:
             file_path = self._get_template_path(name)
         except ValueError as error:
@@ -285,6 +278,7 @@ class TemplateManager:
         Returns:
             模板列表，每个元素包含 name、description、file、status
         """
+        self._ensure_lazy_init()
         templates = []
 
         for file_path in sorted(self.template_dir.glob("*.json")):
@@ -328,6 +322,7 @@ class TemplateManager:
 
     def get_builtin_templates(self) -> Dict[str, Dict[str, Any]]:
         """获取内置模板（从用户目录读取已落盘的文件）"""
+        self._ensure_lazy_init()
         result: Dict[str, Dict[str, Any]] = {}
         for name, styles, _ in [("默认样式", DEFAULT_STYLES, "ToDOCX 内置默认样式")]:
             file_path = self._get_template_path(name)
@@ -351,6 +346,7 @@ class TemplateManager:
         Returns:
             是否重命名成功
         """
+        self._ensure_lazy_init()
         file_path = self._get_template_path(old_name)
         if not file_path.exists():
             return False

@@ -57,10 +57,17 @@ class FileDropZone(QFrame):
         layout.addWidget(self.file_label)
     
     def mousePressEvent(self, event):
+        if not self.isEnabled():
+            super().mousePressEvent(event)
+            return
         if event.button() == Qt.LeftButton:
             self._select_file()
-    
+        super().mousePressEvent(event)
+
     def dragEnterEvent(self, event: QDragEnterEvent):
+        if not self.isEnabled():
+            super().dragEnterEvent(event)
+            return
         if event.mimeData().hasUrls():
             url = event.mimeData().urls()[0]
             file_path = url.toLocalFile()
@@ -72,11 +79,17 @@ class FileDropZone(QFrame):
                         border: 2px dashed #3498db;
                     }
                 """)
-    
+
     def dragLeaveEvent(self, event):
+        if not self.isEnabled():
+            super().dragLeaveEvent(event)
+            return
         self.setStyleSheet("")
-    
+
     def dropEvent(self, event: QDropEvent):
+        if not self.isEnabled():
+            super().dropEvent(event)
+            return
         self.setStyleSheet("")
         if event.mimeData().hasUrls():
             url = event.mimeData().urls()[0]

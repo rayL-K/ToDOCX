@@ -71,7 +71,7 @@ class ConvertWorker(QThread):
     """转换工作线程"""
 
     progress = pyqtSignal(int, str)
-    finished = pyqtSignal(str)
+    convert_finished = pyqtSignal(str)
     error = pyqtSignal(object)
     cancelled = pyqtSignal(str)
 
@@ -98,7 +98,7 @@ class ConvertWorker(QThread):
                     "转换已取消。",
                     code="TODX901",
                 )
-            self.finished.emit(result)
+            self.convert_finished.emit(result)
         except OperationCancelledError as error:
             self.cancelled.emit(error.user_message)
         except Exception as error:
@@ -110,12 +110,79 @@ class ConvertWorker(QThread):
         self.requestInterruption()
 
 
+
+class FileLoadWorker(QThread):
+    """文件异步加载工作线程"""
+
+    load_finished = pyqtSignal(object)  # dict: {seq, type, ...} — 避开 QThread.finished 命名冲突
+    error_py = pyqtSignal(object)  # Exception
+
+    def __init__(self, file_path: str, seq: int = 0):
+        super().__init__()
+        self.file_path = file_path
+        self.seq = seq
+
+    def run(self):
+        try:
+            path_lower = self.file_path.lower()
+            if path_lower.endswith('.docx'):
+                from ..docx_analyzer import DocxAnalyzer
+                analyzer = DocxAnalyzer()
+                analyzer.load_document(self.file_path)
+                if self.isInterruptionRequested():
+                    return
+                self.load_finished.emit({
+                    'seq': self.seq,
+                    'type': 'docx',
+                    'analyzer': analyzer,
+                    'paragraphs_count': len(analyzer.paragraphs),
+                    'groups_count': len(analyzer.format_groups),
+                })
+            elif path_lower.endswith('.tex'):
+                from ..latex_analyzer import LatexAnalyzer
+                analyzer = LatexAnalyzer()
+                analyzer.load_document(self.file_path)
+                if self.isInterruptionRequested():
+                    return
+                self.load_finished.emit({
+                    'seq': self.seq,
+                    'type': 'latex',
+                    'analyzer': analyzer,
+                    'paragraphs_count': len(analyzer.paragraphs),
+                })
+            else:
+                with open(self.file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                if self.isInterruptionRequested():
+                    return
+                paragraphs = SmartFormatPage._parse_markdown(content)
+                if self.isInterruptionRequested():
+                    return
+                self.load_finished.emit({
+                    'seq': self.seq,
+                    'type': 'markdown',
+                    'content': content,
+                    'paragraphs': paragraphs,
+                })
+        except Exception as e:
+            # 取消后抛出的异常不再传给主线程
+            if self.isInterruptionRequested():
+                return
+            self.error_py.emit(e)
+
+    def cancel(self):
+        """请求取消当前任务。"""
+        self.requestInterruption()
+
 class SmartFormatPage(QWidget):
     """智能排版页面 - 交互式预览版"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.worker = None
+        self.load_worker = None
+        self._load_seq = 0
+        self._zombie_workers = []  # 持有已取消但线程未结束的 worker 引用
         self.analyzer = DocxAnalyzer()
         self.latex_analyzer = None  # LaTeX 分析器
         self.template_manager = TemplateManager()
@@ -124,6 +191,7 @@ class SmartFormatPage(QWidget):
         self.logger = get_logger("smart_format_page")
         self.format_mappings = {}
         self.current_file_type = None  # 'docx', 'latex', 'markdown'
+        self._template_tab_refreshed = False
 
         self.setStyleSheet(UI_STYLE)
         self._setup_ui()
@@ -173,7 +241,7 @@ class SmartFormatPage(QWidget):
         # 模板管理标签页
         template_tab = self._create_template_tab()
         self.tab_widget.addTab(template_tab, "模板")
-
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)
         layout.addWidget(self.tab_widget)
 
         # 输出路径设置（移到左侧底部）
@@ -370,6 +438,12 @@ class SmartFormatPage(QWidget):
             else:
                 self._refresh_item_type(tree_item)
 
+
+    def _on_tab_changed(self, index: int) -> None:
+        """标签页切换：首次切换到模板页时刷新列表"""
+        if index == 1 and not self._template_tab_refreshed:
+            self._template_tab_refreshed = True
+            self._refresh_template_list()
     def _create_style_tab(self):
         """创建样式设置标签页"""
         scroll = QScrollArea()
@@ -615,7 +689,6 @@ class SmartFormatPage(QWidget):
         layout.setContentsMargins(4, 4, 4, 4)
 
         self.template_list = QListWidget()
-        self._refresh_template_list()
         layout.addWidget(self.template_list)
 
         btn_layout = QHBoxLayout()
@@ -866,43 +939,88 @@ class SmartFormatPage(QWidget):
         return styles
 
     def _on_file_selected(self, file_path):
-        """文件选择后的处理"""
+        """文件选择后的处理（异步加载）"""
         self.paragraph_tree.clear()
         self.format_mappings = {}  # 清空之前的映射
+
+        # 如果已有加载中的任务：断开信号、丢回僵尸池避免 GC 提前销毁 QThread
+        if self.load_worker is not None:
+            try:
+                self.load_worker.load_finished.disconnect(self._on_load_finished)
+                self.load_worker.error_py.disconnect(self._on_load_error)
+            except TypeError:
+                pass
+            self.load_worker.cancel()
+            self._zombie_workers.append(self.load_worker)
+            self.load_worker = None
         self.current_file_type = None  # 记录当前文件类型
 
-        if file_path.lower().endswith('.docx'):
+        # 显示加载状态
+        self.format_info_label.setText("正在加载文件...")
+        self.progress_widget.reset()
+        self.progress_widget.set_progress(0, "正在加载文件...")
+        self._set_loading_state(True)
+        self._load_seq += 1
+
+        self.load_worker = FileLoadWorker(file_path, seq=self._load_seq)
+
+        file_lower = file_path.lower()
+        if file_lower.endswith('.docx'):
             self.current_file_type = 'docx'
-            try:
-                self.analyzer.load_document(file_path)
-                self._populate_paragraph_tree()
-                groups = self.analyzer.get_format_summary()
-                self.format_info_label.setText(f"共 {len(self.analyzer.paragraphs)} 段，{len(groups)} 种格式")
-            except Exception as error:
-                self.format_info_label.setText("无法加载文档")
-                self._show_error("读取文档失败", error)
-        elif file_path.lower().endswith('.tex'):
+        elif file_lower.endswith('.tex'):
             self.current_file_type = 'latex'
-            self.latex_analyzer = LatexAnalyzer()
-            try:
-                self.latex_analyzer.load_document(file_path)
-                self._populate_latex_tree()
-                self.format_info_label.setText(f"LaTeX文档：共 {len(self.latex_analyzer.paragraphs)} 段")
-            except Exception as error:
-                self.format_info_label.setText("无法加载LaTeX文档")
-                self._show_error("读取文档失败", error)
         else:
             self.current_file_type = 'markdown'
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                self.md_paragraphs = self._parse_markdown(content)
-                self._populate_markdown_tree()
-                self.format_info_label.setText(f"Markdown文件：共 {len(self.md_paragraphs)} 段")
-            except Exception as error:
-                self.format_info_label.setText("无法读取 Markdown 文件")
-                self._show_error("读取文档失败", error)
 
+        self.load_worker.load_finished.connect(self._on_load_finished)
+        self.load_worker.error_py.connect(self._on_load_error)
+        self.load_worker.start()
+
+    def _on_load_finished(self, data: dict):
+        """异步加载完成后的处理"""
+        # 丢弃过时 worker 的信号（用户已切换文件）
+        if data.get('seq', -1) != self._load_seq:
+            return
+
+        self._set_loading_state(False)
+        # 不释放 worker — 工作线程的 run() 可能还在清理中
+
+        file_type = data['type']
+        if file_type == 'docx':
+            self.analyzer = data['analyzer']
+            self._populate_paragraph_tree()
+            self.format_info_label.setText(
+                f"共 {data['paragraphs_count']} 段，{data['groups_count']} 种格式"
+            )
+        elif file_type == 'latex':
+            self.latex_analyzer = data['analyzer']
+            self._populate_latex_tree()
+            self.format_info_label.setText(
+                f"LaTeX文档：共 {data['paragraphs_count']} 段"
+            )
+        elif file_type == 'markdown':
+            self.md_paragraphs = data['paragraphs']
+            self._populate_markdown_tree()
+            self.format_info_label.setText(
+                f"Markdown文件：共 {len(self.md_paragraphs)} 段"
+            )
+        self.progress_widget.set_progress(100, "加载完成")
+
+    def _on_load_error(self, error: Exception):
+        """异步加载失败处理"""
+        self._set_loading_state(False)
+        # 不释放 worker — 同上
+        self.format_info_label.setText("文件加载失败")
+        self.progress_widget.set_error("加载失败")
+        self._show_error("读取文件失败", error)
+
+    def _set_loading_state(self, is_loading: bool) -> None:
+        """切换加载中的 UI 状态"""
+        self.file_zone.setEnabled(not is_loading)
+        self.convert_btn.setEnabled(not is_loading)
+        self.clear_btn.setEnabled(not is_loading)
+        # blockSignals 彻底阻断禁用状态下 Qt 版本边缘情况可能投递的信号
+        self.clear_btn.blockSignals(is_loading)
     def _populate_latex_tree(self):
         """填充 LaTeX 段落树"""
         self.paragraph_tree.clear()
@@ -948,7 +1066,8 @@ class SmartFormatPage(QWidget):
         item.setText(0, display_text)
         item.setForeground(0, color)
 
-    def _parse_markdown(self, content: str) -> list:
+    @staticmethod
+    def _parse_markdown(content: str) -> list:
         """解析Markdown内容，识别各段落类型
         
         Returns:
@@ -1143,15 +1262,41 @@ class SmartFormatPage(QWidget):
 
     def _clear(self):
         """清除"""
+        # 禁用状态下的事件丢弃（Qt 版本边缘情况）
+        if not self.clear_btn.isEnabled():
+            return
+        # 取消正在进行的加载或转换（丢入僵尸池防止 GC 提前销毁 QThread）
+        # 注意：僵尸只追加不清理，isRunning() 返回 False 后 C++ cleanup 可能仍在进行
+        self._load_seq += 1
+        if self.load_worker and self.load_worker.isRunning():
+            self.load_worker.cancel()
+            self._zombie_workers.append(self.load_worker)
+            self.load_worker = None
+        if self.worker and self.worker.isRunning():
+            self.worker.cancel()
+            self._zombie_workers.append(self.worker)
+            self.worker = None
         self.file_zone.clear()
         self.paragraph_tree.clear()
         self.format_info_label.setText("选择DOCX文件后显示内容")
         self.progress_widget.reset()
         self.format_mappings = {}
         self.current_file_type = None
+        self._set_loading_state(False)
 
     def _start_convert(self):
         """开始转换"""
+        # 如果在转换中，取消旧任务（丢入僵尸池）
+        if self.worker and self.worker.isRunning():
+            try:
+                self.worker.convert_finished.disconnect(self._on_convert_finished)
+                self.worker.error.disconnect(self._on_convert_error)
+                self.worker.cancelled.disconnect(self._on_convert_cancelled)
+            except TypeError:
+                pass
+            self.worker.cancel()
+            self._zombie_workers.append(self.worker)
+            self.worker = None
         input_file = self.file_zone.get_file()
         if not input_file:
             QMessageBox.warning(self, "提示", "请先选择文件")
@@ -1224,7 +1369,7 @@ class SmartFormatPage(QWidget):
             )
         
         self.worker.progress.connect(self.progress_widget.set_progress)
-        self.worker.finished.connect(self._on_convert_finished)
+        self.worker.convert_finished.connect(self._on_convert_finished)
         self.worker.error.connect(self._on_convert_error)
         self.worker.cancelled.connect(self._on_convert_cancelled)
 
@@ -1246,6 +1391,9 @@ class SmartFormatPage(QWidget):
         self.cancel_btn.setEnabled(is_running)
         self.clear_btn.setEnabled(not is_running)
         self.browse_btn.setEnabled(not is_running)
+        self.convert_btn.blockSignals(is_running)
+        self.clear_btn.blockSignals(is_running)
+        self.browse_btn.blockSignals(is_running)
 
     def _remember_output_dir(self, output_dir: str) -> None:
         """持久化最近使用的输出目录。"""
