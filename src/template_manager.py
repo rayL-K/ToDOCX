@@ -29,6 +29,7 @@ class TemplateManager:
         self.template_dir.mkdir(parents=True, exist_ok=True)
         self.logger = get_logger("templates")
         self._migrate_legacy_templates()
+        self._ensure_builtin_templates()
 
     @staticmethod
     def _normalize_template_name(name: str) -> str:
@@ -311,11 +312,34 @@ class TemplateManager:
 
         return templates
 
+    def _ensure_builtin_templates(self) -> None:
+        """确保内置模板已写入用户目录。仅在文件不存在时写入。"""
+        builtins = [("默认样式", DEFAULT_STYLES, "ToDOCX 内置默认样式")]
+        for name, styles, description in builtins:
+            file_path = self._get_template_path(name)
+            if not file_path.exists():
+                try:
+                    payload = self._build_template_payload(name, styles, description)
+                    self._validate_template_payload(payload, expected_name=name)
+                    atomic_write_json(file_path, payload)
+                    log_event(self.logger, "内置模板已落盘", template=str(file_path), name=name)
+                except (TemplateStorageError, OSError) as error:
+                    log_exception(self.logger, "内置模板落盘失败", error, name=name)
+
     def get_builtin_templates(self) -> Dict[str, Dict[str, Any]]:
-        """获取内置模板"""
-        return {
-            "默认样式": DEFAULT_STYLES,
-        }
+        """获取内置模板（从用户目录读取已落盘的文件）"""
+        result: Dict[str, Dict[str, Any]] = {}
+        for name, styles, _ in [("默认样式", DEFAULT_STYLES, "ToDOCX 内置默认样式")]:
+            file_path = self._get_template_path(name)
+            if file_path.exists():
+                try:
+                    data = self._read_template_file(file_path)
+                    result[name] = data.get("styles", styles)
+                    continue
+                except TemplateStorageError:
+                    pass
+            result[name] = styles  # fallback 到代码常量
+        return result
     
     def rename_template(self, old_name: str, new_name: str) -> bool:
         """重命名模板

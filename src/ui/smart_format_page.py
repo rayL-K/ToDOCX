@@ -642,19 +642,14 @@ class SmartFormatPage(QWidget):
     def _refresh_template_list(self):
         """刷新模板列表"""
         self.template_list.clear()
-        builtin = self.template_manager.get_builtin_templates()
-        for name in builtin.keys():
-            item = QListWidgetItem(f"[内置] {name}")
-            item.setData(Qt.UserRole, ("builtin", name))
-            self.template_list.addItem(item)
-
-        user_templates = self.template_manager.list_templates()
-        for tpl in user_templates:
+        templates = self.template_manager.list_templates()
+        for tpl in templates:
             status = tpl.get("status", "ok")
-            prefix = "[用户]" if status == "ok" else "[损坏]"
-            item = QListWidgetItem(f"{prefix} {tpl['name']}")
+            prefix = "[损坏]" if status != "ok" else ""
+            label = f"{prefix} {tpl['name']}" if prefix else tpl["name"]
+            item = QListWidgetItem(label)
             item.setData(Qt.UserRole, ("user", tpl["name"], status))
-            item.setToolTip(tpl.get("description", ""))
+            item.setToolTip(f"{tpl.get('description', '')}\n{tpl['file']}")
             self.template_list.addItem(item)
 
     def _load_template(self):
@@ -667,17 +662,14 @@ class SmartFormatPage(QWidget):
         tpl_data = current.data(Qt.UserRole)
         tpl_type, tpl_name = tpl_data[0], tpl_data[1]
         tpl_status = tpl_data[2] if len(tpl_data) > 2 else "ok"
-        if tpl_type == "builtin":
-            styles = self.template_manager.get_builtin_templates().get(tpl_name, {})
-        else:
-            if tpl_status != "ok":
-                QMessageBox.warning(self, "提示", "该模板文件已损坏，请删除后重新保存。")
-                return
-            try:
-                styles = self.template_manager.load_template(tpl_name)
-            except Exception as error:
-                self._show_error("加载模板失败", error)
-                return
+        if tpl_status != "ok":
+            QMessageBox.warning(self, "提示", "该模板文件已损坏，请删除后重新保存。")
+            return
+        try:
+            styles = self.template_manager.load_template(tpl_name)
+        except Exception as error:
+            self._show_error("加载模板失败", error)
+            return
 
         if styles:
             self._apply_styles_to_ui(styles)
@@ -704,9 +696,6 @@ class SmartFormatPage(QWidget):
             return
         tpl_data = current.data(Qt.UserRole)
         tpl_type, tpl_name = tpl_data[0], tpl_data[1]
-        if tpl_type == "builtin":
-            QMessageBox.warning(self, "提示", "内置模板不能重命名")
-            return
         new_name, ok = QInputDialog.getText(self, "重命名模板", "新名称:", text=tpl_name)
         if ok and new_name and new_name != tpl_name:
             try:
@@ -725,9 +714,6 @@ class SmartFormatPage(QWidget):
             return
         tpl_data = current.data(Qt.UserRole)
         tpl_type, tpl_name = tpl_data[0], tpl_data[1]
-        if tpl_type == "builtin":
-            QMessageBox.warning(self, "提示", "内置模板不能删除")
-            return
         reply = QMessageBox.question(self, "确认", f"删除 '{tpl_name}'?")
         if reply == QMessageBox.Yes:
             try:
