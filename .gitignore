@@ -31,7 +31,9 @@ output/
 # PyInstaller 打包配置
 #  通常由 Python 脚本根据模板生成，用于在打包前写入日期等元信息
 *.manifest
+# 排除自动生成的 spec（保留根目录的 ToDOCX.spec）
 *.spec
+!ToDOCX.spec
 
 # 安装器日志
 pip-log.txt

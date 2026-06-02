@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 from .config import BUILTIN_DEFAULTS
@@ -25,9 +26,25 @@ def ensure_user_data_dir() -> Path:
     return path
 
 
-def get_templates_dir() -> Path:
-    """模板目录（项目内 templates/）。"""
+def _is_frozen() -> bool:
+    """判断是否在 PyInstaller 打包的 exe 中运行。"""
+    return getattr(sys, "frozen", False)
 
+
+def get_templates_dir() -> Path:
+    """模板目录。
+
+    - 开发阶段：项目根目录下的 templates/
+    - 打包分发后：%%APPDATA%%\ToDOCX\templates\（首次自动从包内复制）
+    """
+
+    if _is_frozen():
+        # 打包运行 —— 用用户目录
+        user_dir = ensure_user_data_dir() / "templates"
+        user_dir.mkdir(parents=True, exist_ok=True)
+        return user_dir
+
+    # 开发运行 —— 用项目内目录
     path = Path(__file__).resolve().parent.parent / "templates"
     path.mkdir(parents=True, exist_ok=True)
     return path
