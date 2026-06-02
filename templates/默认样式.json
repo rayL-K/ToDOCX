@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "name": "默认样式",
+  "description": "ToDOCX 内置默认样式",
+  "styles": {
+    "heading1": {
+      "font_name_cn": "宋体",
+      "font_name_en": "Times New Roman",
+      "font_size": "小三",
+      "bold": true,
+      "color": "#000000",
+      "space_before": 12,
+      "space_after": 6,
+      "line_spacing_type": "固定值",
+      "line_spacing_value": 20,
+      "alignment": "left"
+    },
+    "heading2": {
+      "font_name_cn": "黑体",
+      "font_name_en": "Times New Roman",
+      "font_size": "四号",
+      "bold": true,
+      "color": "#000000",
+      "space_before": 10,
+      "space_after": 5,
+      "line_spacing_type": "固定值",
+      "line_spacing_value": 20,
+      "alignment": "left"
+    },
+    "heading3": {
+      "font_name_cn": "黑体",
+      "font_name_en": "Times New Roman",
+      "font_size": "小四",
+      "bold": true,
+      "color": "#000000",
+      "space_before": 8,
+      "space_after": 4,
+      "line_spacing_type": "固定值",
+      "line_spacing_value": 20,
+      "alignment": "left"
+    },
+    "heading4": {
+      "font_name_cn": "黑体",
+      "font_name_en": "Times New Roman",
+      "font_size": "小四",
+      "bold": false,
+      "color": "#000000",
+      "space_before": 6,
+      "space_after": 3,
+      "line_spacing_type": "固定值",
+      "line_spacing_value": 20,
+      "alignment": "left"
+    },
+    "body": {
+      "font_name_cn": "宋体",
+      "font_name_en": "Times New Roman",
+      "font_size": "小四",
+      "bold": false,
+      "color": "#000000",
+      "space_before": 0,
+      "space_after": 0,
+      "line_spacing_type": "固定值",
+      "line_spacing_value": 20,
+      "first_line_indent": 2,
+      "alignment": "left"
+    },
+    "caption": {
+      "font_name_cn": "黑体",
+      "font_name_en": "Times New Roman",
+      "font_size": "小五",
+      "bold": false,
+      "color": "#000000",
+      "space_before": 6,
+      "space_after": 6,
+      "line_spacing_type": "1.5倍行距",
+      "line_spacing_value": 1.5,
+      "alignment": "center"
+    },
+    "code": {
+      "font_name_cn": "宋体",
+      "font_name_en": "Consolas",
+      "font_size": "五号",
+      "bold": false,
+      "color": "#333333",
+      "background": "#f5f5f5",
+      "space_before": 6,
+      "space_after": 6,
+      "line_spacing_type": "单倍行距",
+      "line_spacing_value": 1.0,
+      "alignment": "left"
+    },
+    "quote": {
+      "font_name_cn": "楷体",
+      "font_name_en": "Times New Roman",
+      "font_size": "小四",
+      "bold": false,
+      "italic": true,
+      "color": "#666666",
+      "space_before": 6,
+      "space_after": 6,
+      "line_spacing_type": "固定值",
+      "line_spacing_value": 20,
+      "left_indent": 1,
+      "alignment": "left"
+    },
+    "image": {
+      "alignment": "center",
+      "max_width": 15,
+      "space_before": 6,
+      "space_after": 6,
+      "line_spacing_type": "1.5倍行距",
+      "line_spacing_value": 1.5
+    },
+    "table": {
+      "font_name_cn": "宋体",
+      "font_name_en": "Times New Roman",
+      "font_size": "五号",
+      "header_bold": true,
+      "alignment": "center"
+    },
+    "formula": {
+      "alignment": "center",
+      "space_before": 6,
+      "space_after": 6,
+      "line_spacing_type": "1.5倍行距",
+      "line_spacing_value": 1.5
+    }
+  }
+}

@@ -26,9 +26,9 @@ def ensure_user_data_dir() -> Path:
 
 
 def get_templates_dir() -> Path:
-    """用户模板目录。"""
+    """模板目录（项目内 templates/）。"""
 
-    path = ensure_user_data_dir() / "templates"
+    path = Path(__file__).resolve().parent.parent / "templates"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
